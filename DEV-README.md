@@ -72,3 +72,35 @@ It needed, but clearing it up and wrong, outdated cache is a bad pitfall.
 ## Model Load Pattern
 This pattern decouples the model from the server image. The model server code is in the image, but the model artifact itself is downloaded from a separate location (like a model registry or cloud storage) when the server starts up.  
 **Creating Pipeline Bottlenecks**: In a Multiple-Stage Prediction Pipeline, one slow model can slow down the entire chain. It's crucial to monitor the latency of each stage to identify and optimize bottlenecks.
+
+## The Cornerstone of Reproducibility: Data & Model Versioning
+Using **DVC** (Data Version Control) to track changes in your datasets and model artifacts ensures that you can reproduce results and understand the history of your experiments. DVC integrates with Git, allowing you to version control large files and datasets alongside your code.
+
+**Model Explainability**:
+
+While not a formal design pattern in the same vein as the others, Model Explainability (also known as Interpretability) is a critical consideration in modern ML systems. It addresses the question: "Why did my model make this specific prediction?"  
+
+**Why it Matters**:
+
+    Debugging: Understanding why a model makes incorrect predictions is crucial for fixing it.  
+    Trust & Transparency: For stakeholders and users to trust a system, they often need to understand its decision-making process.  
+    Regulatory Compliance: In fields like finance and healthcare, being able to explain model decisions is often a legal or regulatory requirement.  
+
+**Common Tools**:
+
+    'SHAP' (SHapley Additive exPlanations): A game theory-based approach to explain the output of any machine learning model. It provides clear visualizations of which features contributed most to a prediction.  
+    'LIME' (Local Interpretable Model-agnostic Explanations): A technique that explains individual predictions by learning a simpler, interpretable model around the prediction's neighborhood.
+
+**Common pitfalls**:
+
+    Data Leakage: The most dangerous pitfall in training. This happens when information from your validation or test set accidentally leaks into your training data, causing your model to look much more accurate than it actually is.  
+    Incomplete Versioning: Versioning your code is good, but it's not enough. A common mistake is failing to version the data and the model together. Without all three, you can't truly reproduce a result.  
+    Searching on Your Test Set: Never use your final test set for hyperparameter searching. The test set should only be touched once, at the very end, to get an unbiased evaluation of your final model. Searching on it will lead to an over-optimistic and misleading performance metric.  
+    Ignoring Pipeline Failures: A silent failure in your training pipeline (e.g., a data preprocessing step fails to run) can lead to a model being trained on corrupted data. Robust monitoring and alerting for your training pipelines are critical.  
+
+## Quality Assurance & Safe Deployment:
+**Canary Deployments**: This strategy involves rolling out a new model version to a small subset of users or traffic before fully deploying it. This allows you to monitor the new model's performance and catch any issues before they affect all users. If the new model performs well, you can gradually increase its traffic until it's fully deployed. If it performs poorly, you can quickly roll back to the previous version without impacting all users.  
+
+**A/B Testing**: Similar to canary deployments, A/B testing involves running two versions of a model (the current version and the new version) simultaneously and comparing their performance on real user traffic. This allows you to make data-driven decisions about whether the new model is an improvement over the current one. 
+
+**Security Best Practices**: Implementing robust security measures is crucial when deploying machine learning models. This includes securing your API endpoints with authentication and authorization, encrypting sensitive data, and regularly updating your dependencies to patch vulnerabilities. Additionally, consider implementing rate limiting to prevent abuse of your API and monitoring for unusual activity that could indicate a security breach. Common tools for securing APIs include OAuth for authentication and JWT (JSON Web Tokens) for authorization. Always follow the principle of least privilege, giving users and services only the access they need to perform their tasks. Use a Secret Management Tool (Advanced): For more complex systems, dedicated secret management tools like HashiCorp Vault or cloud-native solutions (AWS Secrets Manager, Google Secret Manager) provide centralized, secure storage with fine-grained access control and auditing.  
