@@ -20,3 +20,26 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.5",
 ]
+
+
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+lint.select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort (import sorting)
+    "W",   # pycodestyle warnings
+]
+
+lint.ignore = [
+    "E501",  # Line too long
+]
+
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "data",
+]
