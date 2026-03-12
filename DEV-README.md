@@ -104,3 +104,25 @@ While not a formal design pattern in the same vein as the others, Model Explaina
 **A/B Testing**: Similar to canary deployments, A/B testing involves running two versions of a model (the current version and the new version) simultaneously and comparing their performance on real user traffic. This allows you to make data-driven decisions about whether the new model is an improvement over the current one. 
 
 **Security Best Practices**: Implementing robust security measures is crucial when deploying machine learning models. This includes securing your API endpoints with authentication and authorization, encrypting sensitive data, and regularly updating your dependencies to patch vulnerabilities. Additionally, consider implementing rate limiting to prevent abuse of your API and monitoring for unusual activity that could indicate a security breach. Common tools for securing APIs include OAuth for authentication and JWT (JSON Web Tokens) for authorization. Always follow the principle of least privilege, giving users and services only the access they need to perform their tasks. Use a Secret Management Tool (Advanced): For more complex systems, dedicated secret management tools like HashiCorp Vault or cloud-native solutions (AWS Secrets Manager, Google Secret Manager) provide centralized, secure storage with fine-grained access control and auditing.  
+
+---
+
+# Structure:
+├── airflow
+│   └── dags
+├── configs
+├── core
+├── deployment
+│   ├── grafana
+│   ├── nginx
+│   └── prometheus
+├── docker
+├── services
+│   ├── api
+│   ├── data
+│   │   ├── ingestion
+│   │   └── preprocessing
+│   └── model
+│       ├── inference
+│       └── training
+└── tests
