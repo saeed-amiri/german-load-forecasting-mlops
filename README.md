@@ -44,21 +44,21 @@ Operational systems must detect anomalies like:
 > We will implement a complete MLOps pipeline that includes data ingestion, model training, deployment, and monitoring. The pipeline will be designed to handle the specific challenges of load forecasting and anomaly detection, such as time-series data, seasonality, and the need for real-time predictions.
 
 <details>
-´´´ text
-Data sources
-     ↓
-Data ingestion pipeline
-     ↓
-Feature engineering
-     ↓
-Training pipeline
-     ↓
-Model registry
-     ↓
-Prediction service (API)
-     ↓
-Monitoring + drift detection
-     ↓
-Automatic retraining
-´´´
+
+Data sources  
+     ↓  
+Data ingestion pipeline  
+     ↓  
+Feature engineering  
+     ↓  
+Training pipeline  
+     ↓  
+Model registry  
+     ↓  
+Prediction service (API)  
+     ↓  
+Monitoring + drift detection  
+     ↓  
+Automatic retraining  
+
 </details>
