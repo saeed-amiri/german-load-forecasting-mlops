@@ -111,6 +111,7 @@ While not a formal design pattern in the same vein as the others, Model Explaina
 
 following from the root of the project: [Ref. Example](https://github.com/jomariya23156/sales-forecast-mlops-at-scale)
 
+```text
 ├── airflow
 │   └── dags
 ├── configs
@@ -129,3 +130,5 @@ following from the root of the project: [Ref. Example](https://github.com/jomari
 │       ├── inference
 │       └── training
 └── tests
+
+```
