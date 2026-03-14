@@ -6,6 +6,8 @@ data/
 models/
 !services/data
 !**/.gitkeep
+inspect_data.py
+playground.sql
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
