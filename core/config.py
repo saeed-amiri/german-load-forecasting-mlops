@@ -25,7 +25,8 @@ class PathSettings:
 class SQLConfig:
     """Internal parameters of handling SQL"""
     chunk_size: int = 5000
-    table_name: str = 'raw_data'
+    table_name: str = "german_load_clean"
+    transform: str = "transform.sql"
 
 
 @dataclass(frozen=True)
@@ -66,6 +67,7 @@ class PipelineConfig:
             sql = SQLConfig(
                 chunk_size=int(config_dict["sql"]["chunk_size"]),
                 table_name=config_dict["sql"]["table_name"],
+                transform=config_dict["sql"]["transform"],
             )
         except (KeyError, ValueError, TypeError):
             logger.warning("Problems in reading SQL parameters, rolls back to the default values")
