@@ -4,3 +4,10 @@ paths:
   raw_data: "data/raw/time_series-2020-10-06.csv"
   processed_data: "data/processed/processed.csv"
   database: "data/database.db"
+
+
+
+# Parameters for SQL handeling
+sql:
+  chunk_size: 50000  # Rolls back to 5000 if not set for pandas
+  table_name: 'raw_data'  # Rolls back to >>raw_data<< if not set
