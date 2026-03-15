@@ -4,10 +4,10 @@ Setting up the configurations for the pipeline
 """
 
 import logging
-import yaml
 from dataclasses import dataclass
 from pathlib import Path
 
+import yaml
 
 logger = logging.getLogger(__name__)
 
