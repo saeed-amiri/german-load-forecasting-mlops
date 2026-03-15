@@ -9,5 +9,6 @@ paths:
 
 # Parameters for SQL handeling
 sql:
+  transform: "transform.sql"
   chunk_size: 50000  # Rolls back to 5000 if not set for pandas
-  table_name: 'raw_data'  # Rolls back to >>raw_data<< if not set
+  table_name: "german_load_clean"  # Rolls back to >>german_load_clean<< if not set
