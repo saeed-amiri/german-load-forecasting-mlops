@@ -1,3 +1,4 @@
+# core/config.py
 """
 Setting up the configurations for the pipeline
 """
@@ -21,12 +22,20 @@ class PathSettings:
 
 
 @dataclass(frozen=True)
+class SQLConfig:
+    """Internal parameters of handling SQL"""
+    chunk_size: int = 5000
+    table_name: str = 'raw_data'
+
+
+@dataclass(frozen=True)
 class PipelineConfig:
     """
     Master configuration for the data processing lifecycle.
     """
 
     paths: PathSettings
+    sql: SQLConfig
 
     @classmethod
     def load(cls, config_name: str, project_root: Path) -> PipelineConfig:
@@ -48,12 +57,20 @@ class PipelineConfig:
 
         # Path Settings (Using the same 'config_dict' everywhere)
         paths = PathSettings(
-            raw_file=project_root / config_dict["paths"]["raw_data"],
-            processed_file=project_root / config_dict["paths"]["processed_data"],
-            database=project_root / config_dict["paths"]["database"],
+            raw_file=(project_root / config_dict["paths"]["raw_data"]).resolve(),
+            processed_file=(project_root / config_dict["paths"]["processed_data"]).resolve(),
+            database=(project_root / config_dict["paths"]["database"]).resolve(),
         )
+
+        try:
+            sql = SQLConfig(
+                chunk_size=int(config_dict["sql"]["chunk_size"]),
+                table_name=config_dict["sql"]["table_name"],
+            )
+        except (KeyError, ValueError, TypeError):
+            logger.warning("Problems in reading SQL parameters, rolls back to the default values")
+            sql = SQLConfig()
 
         logger.info(f"Configuration loaded successfully from {config_path}")
 
-        return cls(paths=paths)
-    
+        return cls(paths=paths, sql=sql)
