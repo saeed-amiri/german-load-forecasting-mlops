@@ -3,29 +3,15 @@
 Helpers for handling the sql related job for preprocessing
 """
 import logging
+import sqlite3
 from pathlib import Path
 
-import sqlite3
+import pandas as pd
 
 from core.config import PipelineConfig
 
 
-def fetch_sql_script_path(config: PipelineConfig, project_root: Path) -> Path:
-    """
-    Resolves and validates the absolute path to the SQL transformation script.
-
-    Raises:
-        FileNotFoundError: If the SQL file defined in config does not exist.
-    """
-    sql_file_path: Path = project_root / "services/data/sql" / config.sql.transform
-
-    if not sql_file_path.exists():
-        raise FileNotFoundError(f"SQL transformation script missing at {sql_file_path}")
-
-    return sql_file_path
-
-
-def execute_sql_transformation(config: PipelineConfig, sql_file_path: Path, logger: logging.Logger) -> int:
+def sql_executer(config: PipelineConfig, sql_file_path: Path, logger: logging.Logger) -> int:
     """
     Executes a multi-statement SQL script and returns the resulting row count.
 
@@ -44,3 +30,20 @@ def execute_sql_transformation(config: PipelineConfig, sql_file_path: Path, logg
         cursor.execute(f"SELECT COUNT(*) FROM {config.sql.table_name}")
         count = cursor.fetchone()[0]
     return count
+
+
+def sql_validator(config: PipelineConfig, sql_file_path: Path, logger: logging.Logger) -> pd.DataFrame:
+    """
+    Executes a SQL script via pandas to validate the data
+    """
+
+    if not sql_file_path.exists():
+        raise FileNotFoundError(f"Quality check script missing: {sql_file_path}")
+
+    with open(sql_file_path, 'r', encoding="utf8") as f:
+        sql_query = f.read()
+
+    with sqlite3.connect(config.paths.database) as conn:
+        stats_df = pd.read_sql(sql_query, conn)
+
+    return stats_df

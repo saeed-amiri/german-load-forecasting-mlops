@@ -3,10 +3,10 @@ IO helper functions for ingestion of raw data
 """
 
 import logging
-from pathlib import Path
-from contextlib import closing
-
 import sqlite3
+from contextlib import closing
+from pathlib import Path
+
 import pandas as pd
 
 from core.config import PipelineConfig
@@ -41,7 +41,7 @@ def load_raw_data(config: PipelineConfig, logger: logging.Logger) -> pd.DataFram
 
     except Exception as err:
         logger.exception(f"Unexpected error loading {file_path}")
-        raise RuntimeError(f"Failed to load pipeline data.") from err
+        raise RuntimeError("Failed to load pipeline data.") from err
 
 
 def save_to_sqlite(df: pd.DataFrame, config: PipelineConfig, logger: logging.Logger) -> None:

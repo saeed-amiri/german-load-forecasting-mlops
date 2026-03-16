@@ -11,10 +11,8 @@ from pathlib import Path
 import pandas as pd
 
 from core.config import PipelineConfig
-from core.log_utils import setup_logging
 
 from .io_helpers import load_raw_data, save_to_sqlite
-
 
 logger = logging.getLogger(__name__)
 
@@ -24,14 +22,10 @@ def run_ingestion():
     Main entry point for the data ingestion pipeline.
     Orchestrates configuration loading, logging, and data transfer.
     """
-    project_root = Path(__file__).resolve().parents[3]
-
-    log_path = project_root / "logs" / "ingest.log"
-    setup_logging(log_file=log_path, level=logging.INFO)
+    config = PipelineConfig.load(config_name="config", start_file=Path(__file__))
+    config.setup_service_logging("ingestion")
 
     logger.info("Starting ingestion-pipeline execution...")
-
-    config = PipelineConfig.load(config_name='config', project_root=project_root)
 
     try:
         df = load_raw_data(config, logger)
