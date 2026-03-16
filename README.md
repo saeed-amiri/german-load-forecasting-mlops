@@ -45,6 +45,7 @@ Operational systems must detect anomalies like:
 
 <details>
 
+```text
 Data sources  
      ↓  
 Data ingestion pipeline  
@@ -62,3 +63,4 @@ Monitoring + drift detection
 Automatic retraining  
 
 </details>
+```

@@ -1,0 +1,23 @@
+# configs/config.yaml
+
+paths:
+  raw_data: "data/raw/time_series-2020-10-06.csv"
+  processed_data: "data/processed/processed.csv"
+  database: "data/database.db"
+
+
+
+# Parameters for SQL handeling
+sql:
+  table_name: "german_load_clean"
+  chunk_size: 50000
+  transform: "transform.sql"
+  quality_check: "quality_check.sql"
+
+
+# Optional centralized logging settings for pipeline services
+logging:
+  level: "INFO"
+  to_console: true
+  ingestion_log: "ingest.log"
+  preprocessing_log: "preprocess.log"

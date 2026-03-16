@@ -108,6 +108,10 @@ While not a formal design pattern in the same vein as the others, Model Explaina
 ---
 
 # Structure:
+
+following from the root of the project: [Ref. Example](https://github.com/jomariya23156/sales-forecast-mlops-at-scale)
+
+```text
 ├── airflow
 │   └── dags
 ├── configs
@@ -126,3 +130,5 @@ While not a formal design pattern in the same vein as the others, Model Explaina
 │       ├── inference
 │       └── training
 └── tests
+
+```
