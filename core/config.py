@@ -101,9 +101,7 @@ class PipelineConfig:
             if candidate.exists():
                 return candidate
 
-        raise FileNotFoundError(
-            f"Configuration file '{config_name}' not found under {config_dir} (.yml/.yaml)."
-        )
+        raise FileNotFoundError(f"Configuration file '{config_name}' not found under {config_dir} (.yml/.yaml).")
 
     @staticmethod
     def _parse_log_level(raw_level: Any) -> int:
@@ -148,7 +146,7 @@ class PipelineConfig:
             project_root = cls._discover_project_root(start_path=start_file)
         else:
             project_root = project_root.resolve()
-        logger.info(f'The project root is: >> {project_root} <<')
+        logger.info(f"The project root is: >> {project_root} <<")
 
         config_path = cls._resolve_config_path(project_root=project_root, config_name=config_name)
 
@@ -178,7 +176,7 @@ class PipelineConfig:
                 transform=sql_config["transform"],
                 quality_check=sql_config.get("quality_check") or sql_config.get("qulity_check") or "quality_check.sql",
             )
-        except (KeyError, ValueError, TypeError):
+        except KeyError, ValueError, TypeError:
             logger.warning("Problems in reading SQL parameters, rolls back to the default values")
             sql = SQLConfig()
 
