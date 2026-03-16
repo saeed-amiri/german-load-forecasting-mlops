@@ -127,12 +127,12 @@ class PipelineConfig:
             project_root = cls._discover_project_root(start_path=start_file)
         else:
             project_root = project_root.resolve()
+        logger.info(f'The project root is: >> {project_root} <<')
 
         config_path = cls._resolve_config_path(project_root=project_root, config_name=config_name)
 
         with open(config_path, "r", encoding="utf8") as f:
             try:
-                # We use 'config_dict' to be crystal clear
                 config_dict = yaml.safe_load(f) or {}
             except yaml.YAMLError as exc:
                 logger.error("Failed to parse YAML at %s", config_path, exc_info=True)
