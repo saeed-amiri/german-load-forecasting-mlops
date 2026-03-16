@@ -9,6 +9,15 @@ paths:
 
 # Parameters for SQL handeling
 sql:
+  table_name: "german_load_clean"
+  chunk_size: 50000
   transform: "transform.sql"
-  chunk_size: 50000  # Rolls back to 5000 if not set for pandas
-  table_name: "german_load_clean"  # Rolls back to >>german_load_clean<< if not set
+  quality_check: "quality_check.sql"
+
+
+# Optional centralized logging settings for pipeline services
+logging:
+  level: "INFO"
+  to_console: true
+  ingestion_log: "ingest.log"
+  preprocessing_log: "preprocess.log"
