@@ -121,8 +121,29 @@ class PipelineConfig:
         start_file: Path | None = None,
     ) -> PipelineConfig:
         """
-        function to load YAML and return a structured PipelineConfig.
+        Initializes the full project configuration by resolving paths and loading YAML settings.
+
+        This method acts as a factory that orchestrates the discovery of the project root,
+        resolution of the configuration file, and the construction of validated 
+        Path, SQL, and Logging settings.
+
+        Args:
+            config_name: The name of the YAML file (with or without .yml extension).
+            project_root: Optional explicit path to the project root. If None, 
+                it is automatically discovered using project markers.
+            start_file: Optional path to start the root discovery search from.
+                Defaults to the current working directory.
+
+        Returns:
+            An initialized and validated PipelineConfig instance.
+
+        Raises:
+            FileNotFoundError: If the project root cannot be located or the 
+                specified configuration file is missing.
+            KeyError: If the YAML file is missing the required 'paths' section.
+            yaml.YAMLError: If the configuration file contains invalid syntax.
         """
+
         if project_root is None:
             project_root = cls._discover_project_root(start_path=start_file)
         else:
