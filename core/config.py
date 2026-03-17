@@ -102,6 +102,7 @@ class SQLConfig:
 @dataclass(frozen=True)
 class APIConfig:
     """Settings and parameters for API"""
+
     templates: Path
 
 
@@ -234,7 +235,9 @@ class PipelineConfig:
                             transform=str(ep_data_cfg.get("ingestion", {}).get("transform", "00_transform.sql")),
                         ),
                         preprocessing=SQLPreprocessingEntrypoints(
-                            quality_check=str(ep_data_cfg.get("preprocessing", {}).get("quality_check", "quality_check.sql")),
+                            quality_check=str(
+                                ep_data_cfg.get("preprocessing", {}).get("quality_check", "quality_check.sql")
+                            ),
                         ),
                     ),
                     api=SQLApiEntrypoints(
@@ -242,7 +245,7 @@ class PipelineConfig:
                     ),
                 ),
             )
-        except (KeyError, ValueError, TypeError):
+        except KeyError, ValueError, TypeError:
             logger.warning("Problems in reading SQL parameters, rolls back to the default values")
             sql = SQLConfig()
 
@@ -262,9 +265,7 @@ class PipelineConfig:
         )
 
         api_cfg = config_dict.get("api", {})
-        api = APIConfig(
-            templates=(project_root / api_cfg["templates"]).resolve()
-        )
+        api = APIConfig(templates=(project_root / api_cfg["templates"]).resolve())
 
         logger.info(f"Configuration loaded successfully from {config_path}")
 
@@ -308,14 +309,13 @@ class PipelineConfig:
             return exact_name_matches[0].resolve()
         if len(exact_name_matches) > 1:
             candidates = ", ".join(str(path.relative_to(self.runtime.sql_dir)) for path in exact_name_matches)
-            raise FileNotFoundError(
-                f"Ambiguous SQL script '{script_name}'. Candidates under sql root: {candidates}"
-            )
+            raise FileNotFoundError(f"Ambiguous SQL script '{script_name}'. Candidates under sql root: {candidates}")
 
         # Fallback for renamed/numbered SQL files, e.g. 00_transform.sql <-> transform.sql
         normalized_requested_name = re.sub(r"^\d+[_-]", "", requested_path.name)
         normalized_matches = sorted(
-            path for path in self.runtime.sql_dir.rglob("*.sql")
+            path
+            for path in self.runtime.sql_dir.rglob("*.sql")
             if re.sub(r"^\d+[_-]", "", path.name) == normalized_requested_name
         )
 
