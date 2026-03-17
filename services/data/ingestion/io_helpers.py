@@ -50,26 +50,26 @@ def save_to_sqlite(df: pd.DataFrame, config: PipelineConfig, logger: logging.Log
 
     Args:
         df: The source DataFrame.
-        table_name: Target table in SQLite.
+        target_table: Target table in SQLite.
         db_path: Path to the .db or .sqlite file.
     """
     if df.empty:
-        logger.warning(f"No data to save for table '{config.sql.table_name}'. Skipping.")
+        logger.warning(f"No data to save for table '{config.sql.tables.target}'. Skipping.")
         return
 
     try:
         with closing(sqlite3.connect(config.paths.database)) as conn:
             with conn:
                 df.to_sql(
-                    name=config.sql.table_name,
+                    name=config.sql.tables.target,
                     con=conn,
                     if_exists='replace',
                     index=False,
                     chunksize=config.sql.chunk_size
                 )
 
-        logger.info(f"Successfully updated '{config.sql.table_name}' with {len(df)} rows.")
+        logger.info(f"Successfully updated '{config.sql.tables.target}' with {len(df)} rows.")
 
     except sqlite3.Error as err:
-        logger.error(f"SQLite Database error for '{config.sql.table_name}': {err}")
+        logger.error(f"SQLite Database error for '{config.sql.tables.target}': {err}")
         raise RuntimeError(f"Failed to write to SQLite at {config.paths.database}") from err

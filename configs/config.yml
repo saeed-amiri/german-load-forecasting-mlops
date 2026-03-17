@@ -9,10 +9,18 @@ paths:
 
 # Parameters for SQL handeling
 sql:
-  target_table: "german_load_clean"
+  root: sql
   chunk_size: 50000
-  transform: "transform.sql"
-  quality_check: "quality_check.sql"
+  tables:
+    target: "german_load_clean"
+  entrypoints:
+    data:
+      ingestion:
+        transform: "00_transform.sql"
+      preprocessing:
+        quality_check: "quality_check.sql"
+    api:
+      target_view: "target_view.sql"
 
 
 # logging settings for pipeline services
