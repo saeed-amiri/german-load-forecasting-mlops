@@ -210,12 +210,56 @@ class PipelineConfig:
             raise KeyError("Missing required 'paths' section in config.")
 
         # Path Settings (Using the same 'config_dict' everywhere)
+        paths = cls.initialize_path_settings(project_root, path_config)
+
+        sql = cls.initialize_sql_config(config_dict)
+
+        log_cfg = cls.initialize_logging_config(config_dict)
+
+        runtime = cls.initialize_runtime_paths(project_root, config_path, sql)
+
+        api_cfg = config_dict.get("api", {})
+        api = APIConfig(templates=(project_root / api_cfg["templates"]).resolve())
+
+        logger.info(f"Configuration loaded successfully from {config_path}")
+
+        return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg, api=api)
+
+    @classmethod
+    def initialize_path_settings(cls, project_root, path_config):
         paths = PathSettings(
             raw_file=(project_root / path_config["raw_data"]).resolve(),
             processed_file=(project_root / path_config["processed_data"]).resolve(),
             database=(project_root / path_config["database"]).resolve(),
         )
 
+        return paths
+
+    @classmethod
+    def initialize_runtime_paths(cls, project_root, config_path, sql):
+        runtime = RuntimePaths(
+            project_root=project_root,
+            config_file=config_path.resolve(),
+            logs_dir=(project_root / "logs").resolve(),
+            sql_dir=(project_root / sql.root).resolve(),
+        )
+
+        return runtime
+
+    @classmethod
+    def initialize_logging_config(cls, config_dict):
+        logging_config = config_dict.get("logging", {})
+        log_cfg = LoggingConfig(
+            level=cls._parse_log_level(logging_config.get("level", logging.INFO)),
+            to_console=bool(logging_config.get("to_console", True)),
+            ingestion_log=str(logging_config.get("ingestion_log", "ingest.log")),
+            preprocessing_log=str(logging_config.get("preprocessing_log", "preprocess.log")),
+        )
+
+        return log_cfg
+
+    @classmethod
+    def initialize_sql_config(cls, config_dict):
         sql_config = config_dict.get("sql", {})
         try:
             tables_cfg = sql_config.get("tables", {})
@@ -248,28 +292,7 @@ class PipelineConfig:
         except KeyError, ValueError, TypeError:
             logger.warning("Problems in reading SQL parameters, rolls back to the default values")
             sql = SQLConfig()
-
-        logging_config = config_dict.get("logging", {})
-        log_cfg = LoggingConfig(
-            level=cls._parse_log_level(logging_config.get("level", logging.INFO)),
-            to_console=bool(logging_config.get("to_console", True)),
-            ingestion_log=str(logging_config.get("ingestion_log", "ingest.log")),
-            preprocessing_log=str(logging_config.get("preprocessing_log", "preprocess.log")),
-        )
-
-        runtime = RuntimePaths(
-            project_root=project_root,
-            config_file=config_path.resolve(),
-            logs_dir=(project_root / "logs").resolve(),
-            sql_dir=(project_root / sql.root).resolve(),
-        )
-
-        api_cfg = config_dict.get("api", {})
-        api = APIConfig(templates=(project_root / api_cfg["templates"]).resolve())
-
-        logger.info(f"Configuration loaded successfully from {config_path}")
-
-        return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg, api=api)
+        return sql
 
     def service_log_path(self, service_name: str) -> Path:
         """Resolve per-service log file path using configured naming rules."""
