@@ -49,7 +49,7 @@ class SQLConfig:
     """Internal parameters of handling SQL"""
 
     chunk_size: int = 5000
-    table_name: str = "german_load_clean"
+    target_table: str = "german_load_clean"
     transform: str = "transform.sql"
     quality_check: str = "quality_check.sql"
 
@@ -57,6 +57,12 @@ class SQLConfig:
     def qulity_check(self) -> str:
         """Backward-compatibility alias for older config typo."""
         return self.quality_check
+
+
+@dataclass(frozen=True)
+class APIConfig:
+    """Settings and parameters for API"""
+    templates: Path
 
 
 @dataclass(frozen=True)
@@ -70,6 +76,7 @@ class PipelineConfig:
     sql: SQLConfig
     runtime: RuntimePaths
     logging: LoggingConfig
+    api: APIConfig
 
     @classmethod
     def _discover_project_root(cls, start_path: Path | None = None) -> Path:
@@ -172,7 +179,7 @@ class PipelineConfig:
         try:
             sql = SQLConfig(
                 chunk_size=int(sql_config["chunk_size"]),
-                table_name=sql_config["table_name"],
+                target_table=sql_config["target_table"],
                 transform=sql_config["transform"],
                 quality_check=sql_config.get("quality_check") or sql_config.get("qulity_check") or "quality_check.sql",
             )
@@ -192,12 +199,17 @@ class PipelineConfig:
             project_root=project_root,
             config_file=config_path.resolve(),
             logs_dir=(project_root / "logs").resolve(),
-            sql_dir=(project_root / "services" / "data" / "sql").resolve(),
+            sql_dir=(project_root / "sql").resolve(),
+        )
+
+        api_cfg = config_dict.get("api", {})
+        api = APIConfig(
+            templates=(project_root / api_cfg['templates'])
         )
 
         logger.info(f"Configuration loaded successfully from {config_path}")
 
-        return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg)
+        return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg, api=api)
 
     def service_log_path(self, service_name: str) -> Path:
         """Resolve per-service log file path using configured naming rules."""
