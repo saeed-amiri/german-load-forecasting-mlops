@@ -27,7 +27,7 @@ def sql_executer(config: PipelineConfig, sql_file_path: Path, logger: logging.Lo
 
         # Verify
         cursor = conn.cursor()
-        cursor.execute(f"SELECT COUNT(*) FROM {config.sql.table_name}")
+        cursor.execute(f"SELECT COUNT(*) FROM {config.sql.tables.target}")
         count = cursor.fetchone()[0]
     return count
 

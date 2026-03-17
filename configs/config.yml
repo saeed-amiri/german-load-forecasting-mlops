@@ -9,15 +9,28 @@ paths:
 
 # Parameters for SQL handeling
 sql:
-  table_name: "german_load_clean"
+  root: sql
   chunk_size: 50000
-  transform: "transform.sql"
-  quality_check: "quality_check.sql"
+  tables:
+    target: "german_load_clean"
+  entrypoints:
+    data:
+      ingestion:
+        transform: "00_transform.sql"
+      preprocessing:
+        quality_check: "quality_check.sql"
+    api:
+      target_view: "target_view.sql"
 
 
-# Optional centralized logging settings for pipeline services
+# logging settings for pipeline services
 logging:
   level: "INFO"
   to_console: true
   ingestion_log: "ingest.log"
   preprocessing_log: "preprocess.log"
+
+
+# API settings
+api:
+  templates: "services/api/templates"

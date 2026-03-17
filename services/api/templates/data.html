@@ -1,0 +1,28 @@
+<!-- services/api/templates/data.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data View</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+
+    <h1>Load Analysis</h1>
+    <a href="/">
+        <button class="button button2">
+            ← Back to Home
+        </button>
+    </a>
+    
+    <div class="plot-container">
+        {{ plot | safe }}
+    </div>
+
+    <h2>Historical Load Data</h2>
+    
+    <div class="table-container">
+        {{ table | safe }}
+    </div>
+
+</body>
+</html>

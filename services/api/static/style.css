@@ -1,0 +1,98 @@
+/* General Page Styling */
+body { 
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    margin: 40px; 
+    background-color: #f8f9fa; 
+    color: #333;
+}
+
+h1, h2 { color: #2c3e50; }
+
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    text-decoration: none;
+    color: #007bff;
+}
+
+/* 1. This creates the "Window" for the table */
+.table-container {
+    max-height: 300px;    /* Fixed height for the "window" */
+    overflow-y: auto;     /* Enables vertical scrolling */
+    overflow-x: auto;     /* Enables horizontal scrolling if needed */
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* 2. Styling the Pandas Table specifically */
+.dataframe {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+/* Keeps the header fixed at the top while you scroll */
+.dataframe thead th {
+    position: sticky;
+    top: 0;
+    background-color: #284769;
+    color: white;
+    padding: 12px;
+    z-index: 10;
+    text-align: center;
+}
+
+.dataframe td {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.dataframe tr:hover {
+    background-color: #f1f7ff;
+}
+
+/* Plotly Chart Container */
+.plot-container {
+    margin-bottom: 40px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(173, 44, 44, 0.1);
+}
+
+.button {
+    border: none;
+    color: white;
+    padding: 16px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    transition-duration: 0.4s;
+    cursor: pointer;
+}
+
+.button1 {
+    background-color: white; 
+    color: black; 
+    border: 2px solid #04AA6D;
+}
+
+.button1:hover {
+    background-color: #04AA6D;
+    color: white;
+}
+
+.button2 {
+    background-color: white; 
+    color: black; 
+    border: 2px solid #008CBA;
+}
+
+.button2:hover {
+    background-color: #008CBA;
+    color: white;
+}

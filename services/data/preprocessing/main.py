@@ -47,7 +47,7 @@ def run_transformation(config: PipelineConfig) -> None:
         logger.info(f"Executing transformation on {config.paths.database}...")
         count = sql_executer(config, sql_file_path, logger)
 
-        logger.info(f"SUCCESS: Created '{config.sql.table_name}' with {count} rows.")
+        logger.info(f"SUCCESS: Created '{config.sql.tables.target}' with {count} rows.")
 
     except Exception as err:
         logger.critical("Transformation failed!", exc_info=True)
