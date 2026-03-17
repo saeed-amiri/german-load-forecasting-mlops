@@ -4,7 +4,8 @@ Setting up the configurations for the pipeline
 """
 
 import logging
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -45,18 +46,57 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
-class SQLConfig:
-    """Internal parameters of handling SQL"""
+class SQLTables:
+    """Maps to sql.tables in config.yml."""
 
-    chunk_size: int = 5000
-    target_table: str = "german_load_clean"
-    transform: str = "transform.sql"
+    target: str = "german_load_clean"
+
+
+@dataclass(frozen=True)
+class SQLIngestionEntrypoints:
+    """Maps to sql.entrypoints.data.ingestion."""
+
+    transform: str = "00_transform.sql"
+
+
+@dataclass(frozen=True)
+class SQLPreprocessingEntrypoints:
+    """Maps to sql.entrypoints.data.preprocessing."""
+
     quality_check: str = "quality_check.sql"
 
-    @property
-    def qulity_check(self) -> str:
-        """Backward-compatibility alias for older config typo."""
-        return self.quality_check
+
+@dataclass(frozen=True)
+class SQLDataEntrypoints:
+    """Maps to sql.entrypoints.data."""
+
+    ingestion: SQLIngestionEntrypoints = field(default_factory=SQLIngestionEntrypoints)
+    preprocessing: SQLPreprocessingEntrypoints = field(default_factory=SQLPreprocessingEntrypoints)
+
+
+@dataclass(frozen=True)
+class SQLApiEntrypoints:
+    """Maps to sql.entrypoints.api."""
+
+    target_view: str = "target_view.sql"
+
+
+@dataclass(frozen=True)
+class SQLEntrypoints:
+    """Maps to sql.entrypoints."""
+
+    data: SQLDataEntrypoints = field(default_factory=SQLDataEntrypoints)
+    api: SQLApiEntrypoints = field(default_factory=SQLApiEntrypoints)
+
+
+@dataclass(frozen=True)
+class SQLConfig:
+    """Maps to the sql section of config.yml exactly."""
+
+    root: str = "sql"
+    chunk_size: int = 5000
+    tables: SQLTables = field(default_factory=SQLTables)
+    entrypoints: SQLEntrypoints = field(default_factory=SQLEntrypoints)
 
 
 @dataclass(frozen=True)
@@ -177,13 +217,32 @@ class PipelineConfig:
 
         sql_config = config_dict.get("sql", {})
         try:
+            tables_cfg = sql_config.get("tables", {})
+            ep_cfg = sql_config.get("entrypoints", {})
+            ep_data_cfg = ep_cfg.get("data", {})
+            ep_api_cfg = ep_cfg.get("api", {})
+
             sql = SQLConfig(
-                chunk_size=int(sql_config["chunk_size"]),
-                target_table=sql_config["target_table"],
-                transform=sql_config["transform"],
-                quality_check=sql_config.get("quality_check") or sql_config.get("qulity_check") or "quality_check.sql",
+                root=str(sql_config.get("root", "sql")),
+                chunk_size=int(sql_config.get("chunk_size", 5000)),
+                tables=SQLTables(
+                    target=str(tables_cfg.get("target", "german_load_clean")),
+                ),
+                entrypoints=SQLEntrypoints(
+                    data=SQLDataEntrypoints(
+                        ingestion=SQLIngestionEntrypoints(
+                            transform=str(ep_data_cfg.get("ingestion", {}).get("transform", "00_transform.sql")),
+                        ),
+                        preprocessing=SQLPreprocessingEntrypoints(
+                            quality_check=str(ep_data_cfg.get("preprocessing", {}).get("quality_check", "quality_check.sql")),
+                        ),
+                    ),
+                    api=SQLApiEntrypoints(
+                        target_view=str(ep_api_cfg.get("target_view", "target_view.sql")),
+                    ),
+                ),
             )
-        except KeyError, ValueError, TypeError:
+        except (KeyError, ValueError, TypeError):
             logger.warning("Problems in reading SQL parameters, rolls back to the default values")
             sql = SQLConfig()
 
@@ -199,12 +258,12 @@ class PipelineConfig:
             project_root=project_root,
             config_file=config_path.resolve(),
             logs_dir=(project_root / "logs").resolve(),
-            sql_dir=(project_root / "sql").resolve(),
+            sql_dir=(project_root / sql.root).resolve(),
         )
 
         api_cfg = config_dict.get("api", {})
         api = APIConfig(
-            templates=(project_root / api_cfg['templates'])
+            templates=(project_root / api_cfg["templates"]).resolve()
         )
 
         logger.info(f"Configuration loaded successfully from {config_path}")
@@ -237,16 +296,47 @@ class PipelineConfig:
         return log_path
 
     def sql_script_path(self, script_name: str) -> Path:
-        """Resolve and validate SQL script path under the standard sql directory."""
-        sql_file_path = (self.runtime.sql_dir / script_name).resolve()
+        """Resolve SQL script path under SQL root with recursive fallback lookup."""
+        requested_path = Path(script_name)
+        direct_candidate = (self.runtime.sql_dir / requested_path).resolve()
 
-        if not sql_file_path.exists():
-            raise FileNotFoundError(f"SQL script missing at {sql_file_path}")
+        if direct_candidate.exists():
+            return direct_candidate
 
-        return sql_file_path
+        exact_name_matches = sorted(self.runtime.sql_dir.rglob(requested_path.name))
+        if len(exact_name_matches) == 1:
+            return exact_name_matches[0].resolve()
+        if len(exact_name_matches) > 1:
+            candidates = ", ".join(str(path.relative_to(self.runtime.sql_dir)) for path in exact_name_matches)
+            raise FileNotFoundError(
+                f"Ambiguous SQL script '{script_name}'. Candidates under sql root: {candidates}"
+            )
+
+        # Fallback for renamed/numbered SQL files, e.g. 00_transform.sql <-> transform.sql
+        normalized_requested_name = re.sub(r"^\d+[_-]", "", requested_path.name)
+        normalized_matches = sorted(
+            path for path in self.runtime.sql_dir.rglob("*.sql")
+            if re.sub(r"^\d+[_-]", "", path.name) == normalized_requested_name
+        )
+
+        if len(normalized_matches) == 1:
+            return normalized_matches[0].resolve()
+        if len(normalized_matches) > 1:
+            candidates = ", ".join(str(path.relative_to(self.runtime.sql_dir)) for path in normalized_matches)
+            raise FileNotFoundError(
+                f"Ambiguous normalized SQL match for '{script_name}'. Candidates under sql root: {candidates}"
+            )
+
+        raise FileNotFoundError(
+            f"SQL script '{script_name}' not found under {self.runtime.sql_dir}. "
+            "Either create the file or point to an existing relative path in config.yml."
+        )
 
     def transformation_sql_path(self) -> Path:
-        return self.sql_script_path(self.sql.transform)
+        return self.sql_script_path(self.sql.entrypoints.data.ingestion.transform)
 
     def quality_check_sql_path(self) -> Path:
-        return self.sql_script_path(self.sql.quality_check)
+        return self.sql_script_path(self.sql.entrypoints.data.preprocessing.quality_check)
+
+    def api_target_view_sql_path(self) -> Path:
+        return self.sql_script_path(self.sql.entrypoints.api.target_view)
