@@ -7,7 +7,6 @@ import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 import yaml
 
@@ -15,6 +14,7 @@ from core.log_utils import setup_logging
 
 from .config_api import APIConfig, initialize_api_config
 from .config_paths import PathSettings, initialize_path_settings
+from .config_logs import LoggingConfig, initialize_logging_config
 
 logger = logging.getLogger(__name__)
 
@@ -27,16 +27,6 @@ class RuntimePaths:
     config_file: Path
     logs_dir: Path
     sql_dir: Path
-
-
-@dataclass(frozen=True)
-class LoggingConfig:
-    """Logging behavior and file naming for services."""
-
-    level: int = logging.INFO
-    to_console: bool = True
-    ingestion_log: str = "ingest.log"
-    preprocessing_log: str = "preprocess.log"
 
 
 @dataclass(frozen=True)
@@ -138,14 +128,6 @@ class PipelineConfig:
 
         raise FileNotFoundError(f"Configuration file '{config_name}' not found under {config_dir} (.yml/.yaml).")
 
-    @staticmethod
-    def _parse_log_level(raw_level: Any) -> int:
-        if isinstance(raw_level, int):
-            return raw_level
-        if isinstance(raw_level, str):
-            return getattr(logging, raw_level.upper(), logging.INFO)
-        return logging.INFO
-
     @classmethod
     def load(
         cls,
@@ -201,7 +183,7 @@ class PipelineConfig:
 
         sql = cls.initialize_sql_config(config_dict)
 
-        log_cfg = cls.initialize_logging_config(config_dict)
+        log_cfg = initialize_logging_config(config_dict)
 
         runtime = cls.initialize_runtime_paths(project_root, config_path, sql)
 
@@ -221,18 +203,6 @@ class PipelineConfig:
         )
 
         return runtime
-
-    @classmethod
-    def initialize_logging_config(cls, config_dict):
-        logging_config = config_dict.get("logging", {})
-        log_cfg = LoggingConfig(
-            level=cls._parse_log_level(logging_config.get("level", logging.INFO)),
-            to_console=bool(logging_config.get("to_console", True)),
-            ingestion_log=str(logging_config.get("ingestion_log", "ingest.log")),
-            preprocessing_log=str(logging_config.get("preprocessing_log", "preprocess.log")),
-        )
-
-        return log_cfg
 
     @classmethod
     def initialize_sql_config(cls, config_dict):

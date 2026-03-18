@@ -1,4 +1,4 @@
-# configs/config_api.py
+# configs/config_paths.py
 """
 Setting up configuration for paths
 It will be handle by configs/main.py
