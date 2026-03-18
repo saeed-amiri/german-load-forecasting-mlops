@@ -4,11 +4,10 @@ Setting up configuration for SQL
 It will be handled by configs/main.py
 """
 
-import logging
 import re
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SQLTables(BaseModel):
@@ -70,17 +69,6 @@ class SQLConfig(BaseModel):
     chunk_size: int = 5000
     tables: SQLTables = Field(default_factory=SQLTables)
     entrypoints: SQLEntrypoints = Field(default_factory=SQLEntrypoints)
-
-
-def initialize_sql_config(config_dict, logger: logging.Logger) -> SQLConfig:
-    sql_config = config_dict.get("sql", {}) or {}
-    try:
-        sql = SQLConfig.model_validate(sql_config)
-    except (ValidationError, ValueError, TypeError) as exc:
-        logger.warning("Problems in reading SQL parameters, rolls back to the default values")
-        logger.debug("SQL config validation issue: %s", exc)
-        sql = SQLConfig()
-    return sql
 
 
 def sql_script_path(script_name: str, sql_dir: Path) -> Path:

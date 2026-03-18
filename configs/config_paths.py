@@ -6,24 +6,14 @@ It will be handled by configs/main.py
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class PathSettings(BaseModel):
     """Internal file system locations."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    raw_file: Path
-    processed_file: Path
+    raw_file: Path = Field(alias="raw_data")
+    processed_file: Path = Field(alias="processed_data")
     database: Path
-
-
-def initialize_path_settings(project_root: Path, path_config: dict[str, str]) -> PathSettings:
-    paths = PathSettings(
-        raw_file=(project_root / path_config["raw_data"]).resolve(),
-        processed_file=(project_root / path_config["processed_data"]).resolve(),
-        database=(project_root / path_config["database"]).resolve(),
-    )
-
-    return paths

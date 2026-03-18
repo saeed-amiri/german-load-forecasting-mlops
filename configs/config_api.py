@@ -15,9 +15,3 @@ class APIConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     templates: Path
-
-
-def initialize_api_config(project_root: Path, config_dict: dict) -> APIConfig:
-    api_cfg = config_dict.get("api", {})
-    api = APIConfig(templates=(project_root / api_cfg["templates"]).resolve())
-    return api
