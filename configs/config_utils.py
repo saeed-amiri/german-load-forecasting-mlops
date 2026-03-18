@@ -1,7 +1,7 @@
 # configs/config_utils.py
 """
 Helper functions for the config
-It will be handle by configs/main.py
+It will be handled by configs/main.py
 """
 
 import logging

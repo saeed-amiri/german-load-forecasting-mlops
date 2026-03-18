@@ -1,101 +1,84 @@
 # configs/config_sql.py
 """
 Setting up configuration for SQL
-It will be handle by configs/main.py
+It will be handled by configs/main.py
 """
 
 import logging
 import re
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-@dataclass(frozen=True)
-class SQLTables:
+
+class SQLTables(BaseModel):
     """Maps to sql.tables in config.yml."""
+
+    model_config = ConfigDict(frozen=True)
 
     target: str = "german_load_clean"
 
 
-@dataclass(frozen=True)
-class SQLIngestionEntrypoints:
+class SQLIngestionEntrypoints(BaseModel):
     """Maps to sql.entrypoints.data.ingestion."""
+
+    model_config = ConfigDict(frozen=True)
 
     transform: str = "00_transform.sql"
 
 
-@dataclass(frozen=True)
-class SQLPreprocessingEntrypoints:
+class SQLPreprocessingEntrypoints(BaseModel):
     """Maps to sql.entrypoints.data.preprocessing."""
+
+    model_config = ConfigDict(frozen=True)
 
     quality_check: str = "quality_check.sql"
 
 
-@dataclass(frozen=True)
-class SQLDataEntrypoints:
+class SQLDataEntrypoints(BaseModel):
     """Maps to sql.entrypoints.data."""
 
-    ingestion: SQLIngestionEntrypoints = field(default_factory=SQLIngestionEntrypoints)
-    preprocessing: SQLPreprocessingEntrypoints = field(default_factory=SQLPreprocessingEntrypoints)
+    model_config = ConfigDict(frozen=True)
+
+    ingestion: SQLIngestionEntrypoints = Field(default_factory=SQLIngestionEntrypoints)
+    preprocessing: SQLPreprocessingEntrypoints = Field(default_factory=SQLPreprocessingEntrypoints)
 
 
-@dataclass(frozen=True)
-class SQLApiEntrypoints:
+class SQLApiEntrypoints(BaseModel):
     """Maps to sql.entrypoints.api."""
+
+    model_config = ConfigDict(frozen=True)
 
     target_view: str = "target_view.sql"
 
 
-@dataclass(frozen=True)
-class SQLEntrypoints:
+class SQLEntrypoints(BaseModel):
     """Maps to sql.entrypoints."""
 
-    data: SQLDataEntrypoints = field(default_factory=SQLDataEntrypoints)
-    api: SQLApiEntrypoints = field(default_factory=SQLApiEntrypoints)
+    model_config = ConfigDict(frozen=True)
+
+    data: SQLDataEntrypoints = Field(default_factory=SQLDataEntrypoints)
+    api: SQLApiEntrypoints = Field(default_factory=SQLApiEntrypoints)
 
 
-@dataclass(frozen=True)
-class SQLConfig:
+class SQLConfig(BaseModel):
     """Maps to the sql section of config.yml exactly."""
+
+    model_config = ConfigDict(frozen=True)
 
     root: str = "sql"
     chunk_size: int = 5000
-    tables: SQLTables = field(default_factory=SQLTables)
-    entrypoints: SQLEntrypoints = field(default_factory=SQLEntrypoints)
+    tables: SQLTables = Field(default_factory=SQLTables)
+    entrypoints: SQLEntrypoints = Field(default_factory=SQLEntrypoints)
 
 
 def initialize_sql_config(config_dict, logger: logging.Logger) -> SQLConfig:
-    sql_config = config_dict.get("sql", {})
+    sql_config = config_dict.get("sql", {}) or {}
     try:
-        tables_cfg = sql_config.get("tables", {})
-        ep_cfg = sql_config.get("entrypoints", {})
-        ep_data_cfg = ep_cfg.get("data", {})
-        ep_api_cfg = ep_cfg.get("api", {})
-
-        sql = SQLConfig(
-            root=str(sql_config.get("root", "sql")),
-            chunk_size=int(sql_config.get("chunk_size", 5000)),
-            tables=SQLTables(
-                target=str(tables_cfg.get("target", "german_load_clean")),
-            ),
-            entrypoints=SQLEntrypoints(
-                data=SQLDataEntrypoints(
-                    ingestion=SQLIngestionEntrypoints(
-                        transform=str(ep_data_cfg.get("ingestion", {}).get("transform", "00_transform.sql")),
-                    ),
-                    preprocessing=SQLPreprocessingEntrypoints(
-                        quality_check=str(
-                            ep_data_cfg.get("preprocessing", {}).get("quality_check", "quality_check.sql")
-                        ),
-                    ),
-                ),
-                api=SQLApiEntrypoints(
-                    target_view=str(ep_api_cfg.get("target_view", "target_view.sql")),
-                ),
-            ),
-        )
-    except KeyError, ValueError, TypeError:
+        sql = SQLConfig.model_validate(sql_config)
+    except (ValidationError, ValueError, TypeError) as exc:
         logger.warning("Problems in reading SQL parameters, rolls back to the default values")
+        logger.debug("SQL config validation issue: %s", exc)
         sql = SQLConfig()
     return sql
 

@@ -1,16 +1,20 @@
 # configs/config_runtime.py
 """
 Setting up configuration for runtime paths
-It will be handle by configs/main.py
+It will be handled by configs/main.py
 """
 
-from dataclasses import dataclass
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict
 
-@dataclass(frozen=True)
-class RuntimePaths:
+from .config_sql import SQLConfig
+
+
+class RuntimePaths(BaseModel):
     """Derived runtime paths that are independent from YAML content."""
+
+    model_config = ConfigDict(frozen=True)
 
     project_root: Path
     config_file: Path
@@ -18,7 +22,7 @@ class RuntimePaths:
     sql_dir: Path
 
 
-def initialize_runtime_paths(project_root, config_path, sql) -> RuntimePaths:
+def initialize_runtime_paths(project_root: Path, config_path: Path, sql: SQLConfig) -> RuntimePaths:
     runtime = RuntimePaths(
         project_root=project_root,
         config_file=config_path.resolve(),
