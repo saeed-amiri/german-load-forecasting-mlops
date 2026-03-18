@@ -4,8 +4,8 @@ Setting up configuration for api
 It will be handle by configs/main.py
 """
 
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass(frozen=True)
