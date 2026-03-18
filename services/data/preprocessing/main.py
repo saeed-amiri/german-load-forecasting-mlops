@@ -8,18 +8,22 @@ from pathlib import Path
 
 import pandas as pd
 
-from configs.main import PipelineConfig
+from configs.config_logs import resolve_service_log_path
+from configs.config_sql import sql_script_path
+from configs.main import PipelineConfig, load_config
+from core.log_utils import setup_logging
 
 from .sql_helpers import sql_executer, sql_validator
 
 logger = logging.getLogger(__name__)
+
 
 def run_validation(config: PipelineConfig, logger: logging.Logger) -> None:
     """
     Runs quality checks against the database and logs a summary report.
     """
 
-    sql_file_path = config.quality_check_sql_path()
+    sql_file_path = sql_script_path(config.sql.entrypoints.data.preprocessing.quality_check, config.runtime.sql_dir)
 
     try:
         stats_df: pd.DataFrame = sql_validator(config, sql_file_path, logger)
@@ -42,7 +46,7 @@ def run_transformation(config: PipelineConfig) -> None:
 
     try:
         logger.info(f"Connecting to database at {config.paths.database}")
-        sql_file_path = config.transformation_sql_path()
+        sql_file_path = sql_script_path(config.sql.entrypoints.data.ingestion.transform, config.runtime.sql_dir)
 
         logger.info(f"Executing transformation on {config.paths.database}...")
         count = sql_executer(config, sql_file_path, logger)
@@ -55,8 +59,9 @@ def run_transformation(config: PipelineConfig) -> None:
 
 
 def run_preprocessing() -> None:
-    config = PipelineConfig.load(config_name="config", start_file=Path(__file__))
-    config.setup_service_logging("preprocessing")
+    config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
+    log_path: Path = resolve_service_log_path(config.logging, config.runtime, "preprocessing")
+    setup_logging(log_file=log_path, level=config.logging.level, to_consle=config.logging.to_console)
 
     logger.info("Starting preprocessing-pipeline execution...")
 

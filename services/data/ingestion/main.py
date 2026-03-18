@@ -10,7 +10,9 @@ from pathlib import Path
 
 import pandas as pd
 
-from configs.main import PipelineConfig
+from configs.config_logs import resolve_service_log_path
+from configs.main import PipelineConfig, load_config
+from core.log_utils import setup_logging
 
 from .io_helpers import load_raw_data, save_to_sqlite
 
@@ -22,15 +24,16 @@ def run_ingestion():
     Main entry point for the data ingestion pipeline.
     Orchestrates configuration loading, logging, and data transfer.
     """
-    config = PipelineConfig.load(config_name="config", start_file=Path(__file__))
-    config.setup_service_logging("ingestion")
+    config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
+    log_path: Path = resolve_service_log_path(config.logging, config.runtime, "ingestion")
+    setup_logging(log_file=log_path, level=config.logging.level, to_consle=config.logging.to_console)
 
     logger.info("Starting ingestion-pipeline execution...")
 
     try:
         df = load_raw_data(config, logger)
 
-        df['ingested_at'] = pd.Timestamp.now()
+        df["ingested_at"] = pd.Timestamp.now()
 
         save_to_sqlite(df=df, config=config, logger=logger)
 
