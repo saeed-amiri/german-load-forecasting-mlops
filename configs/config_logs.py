@@ -5,7 +5,6 @@ It will be handle by configs/main.py
 """
 
 import logging
-from pathlib import Path
 from dataclasses import dataclass
 from typing import Any
 
@@ -20,7 +19,7 @@ class LoggingConfig:
     preprocessing_log: str = "preprocess.log"
 
 
-def initialize_logging_config(config_dict):
+def initialize_logging_config(config_dict) -> LoggingConfig:
     logging_config = config_dict.get("logging", {})
     log_cfg = LoggingConfig(
         level=_parse_log_level(logging_config.get("level", logging.INFO)),

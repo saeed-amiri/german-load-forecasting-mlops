@@ -15,18 +15,9 @@ from core.log_utils import setup_logging
 from .config_api import APIConfig, initialize_api_config
 from .config_paths import PathSettings, initialize_path_settings
 from .config_logs import LoggingConfig, initialize_logging_config
+from .config_runtime import RuntimePaths, initialize_runtime_paths
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class RuntimePaths:
-    """Derived runtime paths that are independent from YAML content."""
-
-    project_root: Path
-    config_file: Path
-    logs_dir: Path
-    sql_dir: Path
 
 
 @dataclass(frozen=True)
@@ -185,24 +176,13 @@ class PipelineConfig:
 
         log_cfg = initialize_logging_config(config_dict)
 
-        runtime = cls.initialize_runtime_paths(project_root, config_path, sql)
+        runtime = initialize_runtime_paths(project_root, config_path, sql)
 
         api = initialize_api_config(project_root, config_dict)
 
         logger.info(f"Configuration loaded successfully from {config_path}")
 
         return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg, api=api)
-
-    @classmethod
-    def initialize_runtime_paths(cls, project_root, config_path, sql):
-        runtime = RuntimePaths(
-            project_root=project_root,
-            config_file=config_path.resolve(),
-            logs_dir=(project_root / "logs").resolve(),
-            sql_dir=(project_root / sql.root).resolve(),
-        )
-
-        return runtime
 
     @classmethod
     def initialize_sql_config(cls, config_dict):
