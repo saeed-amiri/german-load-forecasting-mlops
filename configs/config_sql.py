@@ -1,7 +1,7 @@
 # configs/config_sql.py
 """
-Setting up configuration for SQL
-It will be handled by configs/main.py
+Setting up configuration for SQL.
+It will be handled by configs/main.py.
 """
 
 import re
@@ -13,60 +13,63 @@ from pydantic import BaseModel, ConfigDict, Field
 class SQLTables(BaseModel):
     """Maps to sql.tables in config.yml."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    target: str = "german_load_clean"
-
-
-class SQLIngestionEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.data.ingestion."""
-
-    model_config = ConfigDict(frozen=True)
-
-    transform: str = "00_transform.sql"
+    staging: str = "stg_german_load"
+    features: str = "fct_german_load"
+    marts: str = "german_load_api"
 
 
-class SQLPreprocessingEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.data.preprocessing."""
+class SQLStagingEntrypoints(BaseModel):
+    """Maps to sql.entrypoints.staging."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    quality_check: str = "quality_check.sql"
-
-
-class SQLDataEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.data."""
-
-    model_config = ConfigDict(frozen=True)
-
-    ingestion: SQLIngestionEntrypoints = Field(default_factory=SQLIngestionEntrypoints)
-    preprocessing: SQLPreprocessingEntrypoints = Field(default_factory=SQLPreprocessingEntrypoints)
+    stg_german_load: str = "staging/stg_german_load.sql"
 
 
-class SQLApiEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.api."""
+class SQLFeaturesEntrypoints(BaseModel):
+    """Maps to sql.entrypoints.features."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    target_view: str = "target_view.sql"
+    fct_german_load: str = "features/fct_german_load.sql"
+
+
+class SQLMartsEntrypoints(BaseModel):
+    """Maps to sql.entrypoints.marts."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    german_load_api: str = "marts/german_load_api.sql"
+
+
+class SQLQualityEntrypoints(BaseModel):
+    """Maps to sql.entrypoints.quality."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    data_quality_checks: str = "quality/data_quality_checks.sql"
 
 
 class SQLEntrypoints(BaseModel):
     """Maps to sql.entrypoints."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    data: SQLDataEntrypoints = Field(default_factory=SQLDataEntrypoints)
-    api: SQLApiEntrypoints = Field(default_factory=SQLApiEntrypoints)
+    staging: SQLStagingEntrypoints = Field(default_factory=SQLStagingEntrypoints)
+    features: SQLFeaturesEntrypoints = Field(default_factory=SQLFeaturesEntrypoints)
+    marts: SQLMartsEntrypoints = Field(default_factory=SQLMartsEntrypoints)
+    quality: SQLQualityEntrypoints = Field(default_factory=SQLQualityEntrypoints)
 
 
 class SQLConfig(BaseModel):
     """Maps to the sql section of config.yml exactly."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     root: str = "sql"
-    chunk_size: int = 5000
+    chunk_size: int = 50000
     tables: SQLTables = Field(default_factory=SQLTables)
     entrypoints: SQLEntrypoints = Field(default_factory=SQLEntrypoints)
 
@@ -86,7 +89,6 @@ def sql_script_path(script_name: str, sql_dir: Path) -> Path:
         candidates = ", ".join(str(path.relative_to(sql_dir)) for path in exact_name_matches)
         raise FileNotFoundError(f"Ambiguous SQL script '{script_name}'. Candidates under sql root: {candidates}")
 
-    # Fallback for renamed/numbered SQL files, e.g. 00_transform.sql <-> transform.sql
     normalized_requested_name = re.sub(r"^\d+[_-]", "", requested_path.name)
     normalized_matches = sorted(
         path for path in sql_dir.rglob("*.sql") if re.sub(r"^\d+[_-]", "", path.name) == normalized_requested_name

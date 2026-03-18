@@ -11,6 +11,8 @@ import pandas as pd
 
 from configs.main import PipelineConfig
 
+RAW_DATA_TABLE = "raw_data"
+
 
 def load_raw_data(config: PipelineConfig, logger: logging.Logger) -> pd.DataFrame:
     """
@@ -50,26 +52,25 @@ def save_to_sqlite(df: pd.DataFrame, config: PipelineConfig, logger: logging.Log
 
     Args:
         df: The source DataFrame.
-        target_table: Target table in SQLite.
-        db_path: Path to the .db or .sqlite file.
+        Raw data is always persisted to the landing table consumed by staging SQL.
     """
     if df.empty:
-        logger.warning(f"No data to save for table '{config.sql.tables.target}'. Skipping.")
+        logger.warning(f"No data to save for table '{RAW_DATA_TABLE}'. Skipping.")
         return
 
     try:
         with closing(sqlite3.connect(config.paths.database)) as conn:
             with conn:
                 df.to_sql(
-                    name=config.sql.tables.target,
+                    name=RAW_DATA_TABLE,
                     con=conn,
                     if_exists='replace',
                     index=False,
-                    chunksize=config.sql.chunk_size
+                    chunksize=config.sql.chunk_size,
                 )
 
-        logger.info(f"Successfully updated '{config.sql.tables.target}' with {len(df)} rows.")
+        logger.info(f"Successfully updated '{RAW_DATA_TABLE}' with {len(df)} rows.")
 
     except sqlite3.Error as err:
-        logger.error(f"SQLite Database error for '{config.sql.tables.target}': {err}")
+        logger.error(f"SQLite Database error for '{RAW_DATA_TABLE}': {err}")
         raise RuntimeError(f"Failed to write to SQLite at {config.paths.database}") from err

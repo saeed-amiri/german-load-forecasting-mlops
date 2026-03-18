@@ -12,4 +12,4 @@ SELECT
     -- Check for missing values, should be 0 if cleaning worked
     SUM(CASE WHEN load_actual IS NULL THEN 1 ELSE 0 END) as null_counts
 from
-    german_load_clean;
+    fct_german_load;

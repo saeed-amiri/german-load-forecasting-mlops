@@ -30,7 +30,7 @@ def show_data_dashboard(request: Request):
 def _plot_targets() -> go.Figure:
 
     with sqlite3.connect(config.paths.database) as conn:
-        df = pd.read_sql(f"SELECT * FROM {config.sql.tables.target} ORDER BY time DESC LIMIT 48", conn)
+        df = pd.read_sql(f"SELECT * FROM {config.sql.tables.marts} ORDER BY time DESC LIMIT 48", conn)
 
     df_melt = df.melt(
         id_vars=["time"], value_vars=["load_actual", "load_forecast"], var_name="Type", value_name="Load (MW)"
@@ -41,7 +41,7 @@ def _plot_targets() -> go.Figure:
 
 
 def _table_target_overview() -> pd.DataFrame:
-    sql = sql_script_path(config.sql.entrypoints.api.target_view, config.runtime.sql_dir)
+    sql = sql_script_path(config.sql.entrypoints.marts.german_load_api, config.runtime.sql_dir)
     if not sql.exists():
         raise FileNotFoundError(f"Quality check script missing: {sql}")
 

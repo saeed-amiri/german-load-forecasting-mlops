@@ -8,19 +8,23 @@ paths:
 
 
 # Parameters for SQL handeling
+# Parameters for SQL handling
 sql:
   root: sql
   chunk_size: 50000
   tables:
-    target: "german_load_clean"
+    staging: "stg_german_load"          # Layer 1 - clean staging table
+    features: "fct_german_load"         # Layer 2 - ML-ready features table
+    marts: "german_load_api"            # Layer 3 - API / serving table
   entrypoints:
-    data:
-      ingestion:
-        transform: "00_transform.sql"
-      preprocessing:
-        quality_check: "quality_check.sql"
-    api:
-      target_view: "target_view.sql"
+    staging:
+      stg_german_load: "staging/stg_german_load.sql"
+    features:
+      fct_german_load: "features/fct_german_load.sql"
+    marts:
+      german_load_api: "marts/german_load_api.sql"
+    quality:
+      data_quality_checks: "quality/data_quality_checks.sql"
 
 
 # logging settings for pipeline services

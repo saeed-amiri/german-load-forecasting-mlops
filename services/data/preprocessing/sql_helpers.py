@@ -11,7 +11,7 @@ import pandas as pd
 from configs.main import PipelineConfig
 
 
-def sql_executer(config: PipelineConfig, sql_file_path: Path, logger: logging.Logger) -> int:
+def sql_executer(config: PipelineConfig, sql_file_path: Path, target_table: str, logger: logging.Logger) -> int:
     """
     Executes a multi-statement SQL script and returns the resulting row count.
 
@@ -20,14 +20,13 @@ def sql_executer(config: PipelineConfig, sql_file_path: Path, logger: logging.Lo
     with sqlite3.connect(config.paths.database) as conn:
         logger.info(f"Reading SQL script from {sql_file_path}")
 
-        with open(sql_file_path, 'r', encoding="utf8") as sql:
+        with open(sql_file_path, "r", encoding="utf8") as sql:
             sql_query = sql.read()
 
         conn.executescript(sql_query)
 
-        # Verify
         cursor = conn.cursor()
-        cursor.execute(f"SELECT COUNT(*) FROM {config.sql.tables.target}")
+        cursor.execute(f"SELECT COUNT(*) FROM {target_table}")
         count = cursor.fetchone()[0]
     return count
 
@@ -40,7 +39,7 @@ def sql_validator(config: PipelineConfig, sql_file_path: Path, logger: logging.L
     if not sql_file_path.exists():
         raise FileNotFoundError(f"Quality check script missing: {sql_file_path}")
 
-    with open(sql_file_path, 'r', encoding="utf8") as f:
+    with open(sql_file_path, "r", encoding="utf8") as f:
         sql_query = f.read()
 
     with sqlite3.connect(config.paths.database) as conn:

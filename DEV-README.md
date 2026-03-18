@@ -132,3 +132,183 @@ following from the root of the project: [Ref. Example](https://github.com/jomari
 └── tests
 
 ```
+
+current tree:
+
+```text
+sql/
+├── api
+│   └── target_view.sql
+├── data
+│   ├── ingestion
+│   │   └── 00_transform.sql
+│   └── preprocessing
+│       └── quality_check.sql
+└── playground.sql
+```
+
+👉 It’s not *wrong*, but it’s **conceptually messy**:
+
+* “ingestion” + “transform” mixed
+* no clear **data layers**
+* “preprocessing” is vague
+* “target_view” too model-specific too early
+
+---
+
+# 🔥 What’s the real issue?
+
+Your structure is based on:
+
+> *what scripts do*
+
+But good data systems are based on:
+
+> **what layer of data they produce**
+
+---
+
+# ✅ Clean Architecture (what you should move toward)
+
+## 🔹 Replace your structure with this:
+
+```text
+sql/
+├── staging/
+│   └── stg_german_load.sql
+├── features/
+│   └── fct_german_load.sql
+├── marts/                  -- optional (API / serving layer)
+│   └── german_load_api.sql
+├── quality/
+│   └── data_quality_checks.sql
+└── playground.sql
+```
+
+---
+
+# 🧠 Map from YOUR structure → BETTER one
+
+### ❌ Current:
+
+```text
+data/ingestion/00_transform.sql
+```
+
+### ✅ Replace with:
+
+```text
+staging/stg_german_load.sql
+```
+
+👉 This is your **Layer 1**
+
+---
+
+### ❌ Current:
+
+```text
+data/preprocessing/quality_check.sql
+```
+
+### ✅ Replace with:
+
+```text
+quality/data_quality_checks.sql
+```
+
+👉 Keep it, just rename for clarity
+
+---
+
+### ❌ Current:
+
+```text
+api/target_view.sql
+```
+
+### ⚠️ Problem:
+
+* “target” is **model logic**
+* “api” is **serving layer**
+
+👉 You’re mixing concerns
+
+---
+
+### ✅ Replace with:
+
+```text
+features/fct_german_load.sql
+```
+
+AND optionally:
+
+```text
+marts/german_load_api.sql
+```
+
+---
+
+# 🧱 Final Clean Mapping
+
+| Layer    | Purpose            | Your new file             |
+| -------- | ------------------ | ------------------------- |
+| Raw      | untouched CSV      | (already exists)          |
+| Staging  | cleaned base table | `stg_german_load.sql`     |
+| Features | ML-ready dataset   | `fct_german_load.sql`     |
+| Serving  | API / dashboards   | `german_load_api.sql`     |
+| Quality  | validation checks  | `data_quality_checks.sql` |
+
+---
+
+# 🎯 What EACH file should do
+
+## 1. `stg_german_load.sql` (VERY IMPORTANT)
+
+* select relevant DE columns
+* rename
+* filter nulls
+
+👉 NO lags, NO features
+
+---
+
+## 2. `fct_german_load.sql`
+
+* define target
+* create features
+* add lag columns
+
+---
+
+## 3. `german_load_api.sql` (optional but powerful)
+
+* expose:
+
+  * latest predictions
+  * recent data
+
+👉 This is what your FastAPI would read
+
+---
+
+## 4. `data_quality_checks.sql`
+
+* null checks
+* range checks
+* anomaly detection (later)
+
+---
+
+In data engineering (especially dbt-style):
+
+    stg = staging → cleaned raw data
+
+    fct = fact table → main analytical table (features, metrics)
+
+👉 So:
+
+    stg_german_load → cleaned base data
+
+    fct_german_load_features → model-ready dataset

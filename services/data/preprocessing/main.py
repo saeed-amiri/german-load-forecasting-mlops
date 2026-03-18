@@ -18,12 +18,20 @@ from .sql_helpers import sql_executer, sql_validator
 logger = logging.getLogger(__name__)
 
 
+def run_model(config: PipelineConfig, script_name: str, target_table: str, layer_name: str) -> None:
+    """Execute one SQL model and log the resulting row count."""
+    sql_file_path = sql_script_path(script_name, config.runtime.sql_dir)
+    logger.info(f"Executing {layer_name} model from {sql_file_path}...")
+    count = sql_executer(config, sql_file_path, target_table, logger)
+    logger.info(f"SUCCESS: Created '{target_table}' with {count} rows.")
+
+
 def run_validation(config: PipelineConfig, logger: logging.Logger) -> None:
     """
     Runs quality checks against the database and logs a summary report.
     """
 
-    sql_file_path = sql_script_path(config.sql.entrypoints.data.preprocessing.quality_check, config.runtime.sql_dir)
+    sql_file_path = sql_script_path(config.sql.entrypoints.quality.data_quality_checks, config.runtime.sql_dir)
 
     try:
         stats_df: pd.DataFrame = sql_validator(config, sql_file_path, logger)
@@ -46,12 +54,24 @@ def run_transformation(config: PipelineConfig) -> None:
 
     try:
         logger.info(f"Connecting to database at {config.paths.database}")
-        sql_file_path = sql_script_path(config.sql.entrypoints.data.ingestion.transform, config.runtime.sql_dir)
-
-        logger.info(f"Executing transformation on {config.paths.database}...")
-        count = sql_executer(config, sql_file_path, logger)
-
-        logger.info(f"SUCCESS: Created '{config.sql.tables.target}' with {count} rows.")
+        run_model(
+            config,
+            config.sql.entrypoints.staging.stg_german_load,
+            config.sql.tables.staging,
+            "staging",
+        )
+        run_model(
+            config,
+            config.sql.entrypoints.features.fct_german_load,
+            config.sql.tables.features,
+            "features",
+        )
+        run_model(
+            config,
+            config.sql.entrypoints.marts.german_load_api,
+            config.sql.tables.marts,
+            "marts",
+        )
 
     except Exception as err:
         logger.critical("Transformation failed!", exc_info=True)
