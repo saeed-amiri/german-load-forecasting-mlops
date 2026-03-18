@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.config import PipelineConfig
+from configs.main import PipelineConfig
 
 from .io_helpers import load_raw_data, save_to_sqlite
 

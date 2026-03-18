@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.config import PipelineConfig
+from configs.main import PipelineConfig
 
 from .sql_helpers import sql_executer, sql_validator
 

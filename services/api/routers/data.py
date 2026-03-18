@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from core.config import PipelineConfig
+from configs.main import PipelineConfig
 
 config = PipelineConfig.load(config_name="config", start_file=Path(__file__))
 

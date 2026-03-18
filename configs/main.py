@@ -1,4 +1,4 @@
-# core/config.py
+# configs/main.py
 """
 Setting up the configurations for the pipeline
 """

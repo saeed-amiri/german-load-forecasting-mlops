@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.config import PipelineConfig
+from configs.main import PipelineConfig
 
 
 def load_raw_data(config: PipelineConfig, logger: logging.Logger) -> pd.DataFrame:
