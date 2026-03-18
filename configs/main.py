@@ -13,6 +13,8 @@ import yaml
 
 from core.log_utils import setup_logging
 
+from .config_api import APIConfig, initialize_api_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,13 +99,6 @@ class SQLConfig:
     chunk_size: int = 5000
     tables: SQLTables = field(default_factory=SQLTables)
     entrypoints: SQLEntrypoints = field(default_factory=SQLEntrypoints)
-
-
-@dataclass(frozen=True)
-class APIConfig:
-    """Settings and parameters for API"""
-
-    templates: Path
 
 
 @dataclass(frozen=True)
@@ -218,8 +213,7 @@ class PipelineConfig:
 
         runtime = cls.initialize_runtime_paths(project_root, config_path, sql)
 
-        api_cfg = config_dict.get("api", {})
-        api = APIConfig(templates=(project_root / api_cfg["templates"]).resolve())
+        api = initialize_api_config(project_root, config_dict)
 
         logger.info(f"Configuration loaded successfully from {config_path}")
 
