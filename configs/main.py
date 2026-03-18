@@ -7,8 +7,6 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
 from core.log_utils import setup_logging
 
 from .config_api import APIConfig, initialize_api_config
@@ -16,6 +14,7 @@ from .config_logs import LoggingConfig, initialize_logging_config
 from .config_paths import PathSettings, initialize_path_settings
 from .config_runtime import RuntimePaths, initialize_runtime_paths
 from .config_sql import SQLConfig, initialize_sql_config, sql_script_path
+from .config_utils import initialize_project_root, parse_yaml_file
 
 logger = logging.getLogger(__name__)
 
@@ -32,38 +31,6 @@ class PipelineConfig:
     runtime: RuntimePaths
     logging: LoggingConfig
     api: APIConfig
-
-    @classmethod
-    def _discover_project_root(cls, start_path: Path | None = None) -> Path:
-        """Find project root by walking up until standard project markers are found."""
-        anchor = (start_path or Path.cwd()).resolve()
-        if anchor.is_file():
-            anchor = anchor.parent
-
-        for candidate in [anchor, *anchor.parents]:
-            if (candidate / "pyproject.toml").exists() and (candidate / "configs").is_dir():
-                return candidate
-
-        raise FileNotFoundError(
-            f"Unable to locate project root from '{anchor}'. Expected 'pyproject.toml' and 'configs/'."
-        )
-
-    @classmethod
-    def _resolve_config_path(cls, project_root: Path, config_name: str) -> Path:
-        config_dir = project_root / "configs"
-        explicit = config_dir / config_name
-
-        if explicit.suffix in {".yml", ".yaml"}:
-            if explicit.exists():
-                return explicit
-            raise FileNotFoundError(f"Configuration file not found at {explicit}")
-
-        for suffix in (".yml", ".yaml"):
-            candidate = config_dir / f"{config_name}{suffix}"
-            if candidate.exists():
-                return candidate
-
-        raise FileNotFoundError(f"Configuration file '{config_name}' not found under {config_dir} (.yml/.yaml).")
 
     @classmethod
     def load(
@@ -96,20 +63,9 @@ class PipelineConfig:
             yaml.YAMLError: If the configuration file contains invalid syntax.
         """
 
-        if project_root is None:
-            project_root = cls._discover_project_root(start_path=start_file)
-        else:
-            project_root = project_root.resolve()
-        logger.info(f"The project root is: >> {project_root} <<")
+        project_root, config_path = initialize_project_root(config_name, project_root, start_file, logger)
 
-        config_path = cls._resolve_config_path(project_root=project_root, config_name=config_name)
-
-        with open(config_path, "r", encoding="utf8") as f:
-            try:
-                config_dict = yaml.safe_load(f) or {}
-            except yaml.YAMLError as exc:
-                logger.error("Failed to parse YAML at %s", config_path, exc_info=True)
-                raise exc
+        config_dict = parse_yaml_file(config_path, logger)
 
         path_config = config_dict.get("paths", {})
         if not path_config:
