@@ -14,17 +14,9 @@ import yaml
 from core.log_utils import setup_logging
 
 from .config_api import APIConfig, initialize_api_config
+from .config_paths import PathSettings, initialize_path_settings
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass(frozen=True)
-class PathSettings:
-    """Internal file system locations."""
-
-    raw_file: Path
-    processed_file: Path
-    database: Path
 
 
 @dataclass(frozen=True)
@@ -205,7 +197,7 @@ class PipelineConfig:
             raise KeyError("Missing required 'paths' section in config.")
 
         # Path Settings (Using the same 'config_dict' everywhere)
-        paths = cls.initialize_path_settings(project_root, path_config)
+        paths = initialize_path_settings(project_root, path_config)
 
         sql = cls.initialize_sql_config(config_dict)
 
@@ -218,16 +210,6 @@ class PipelineConfig:
         logger.info(f"Configuration loaded successfully from {config_path}")
 
         return cls(project_root=project_root, paths=paths, sql=sql, runtime=runtime, logging=log_cfg, api=api)
-
-    @classmethod
-    def initialize_path_settings(cls, project_root, path_config):
-        paths = PathSettings(
-            raw_file=(project_root / path_config["raw_data"]).resolve(),
-            processed_file=(project_root / path_config["processed_data"]).resolve(),
-            database=(project_root / path_config["database"]).resolve(),
-        )
-
-        return paths
 
     @classmethod
     def initialize_runtime_paths(cls, project_root, config_path, sql):
