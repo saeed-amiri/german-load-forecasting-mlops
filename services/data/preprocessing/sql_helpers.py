@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from core.config import PipelineConfig
+from configs.main import PipelineConfig
 
 
 def sql_executer(config: PipelineConfig, sql_file_path: Path, logger: logging.Logger) -> int:

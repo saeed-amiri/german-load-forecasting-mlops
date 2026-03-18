@@ -9,9 +9,10 @@ import plotly.graph_objects as go
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from core.config import PipelineConfig
+from configs.config_sql import sql_script_path
+from configs.main import load_config
 
-config = PipelineConfig.load(config_name="config", start_file=Path(__file__))
+config = load_config(config_name="config", start_file=Path(__file__))
 
 router = APIRouter()
 templates = Jinja2Templates(directory=config.api.templates)
@@ -40,7 +41,7 @@ def _plot_targets() -> go.Figure:
 
 
 def _table_target_overview() -> pd.DataFrame:
-    sql = config.api_target_view_sql_path()
+    sql = sql_script_path(config.sql.entrypoints.api.target_view, config.runtime.sql_dir)
     if not sql.exists():
         raise FileNotFoundError(f"Quality check script missing: {sql}")
 

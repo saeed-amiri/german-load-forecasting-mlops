@@ -27,8 +27,9 @@ sql:
 logging:
   level: "INFO"
   to_console: true
-  ingestion_log: "ingest.log"
-  preprocessing_log: "preprocess.log"
+  service_logs:
+    ingestion: "ingest.log"
+    preprocessing: "preprocess.log"
 
 
 # API settings
