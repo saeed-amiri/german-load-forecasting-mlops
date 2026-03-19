@@ -8,6 +8,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from configs import PipelineConfig
 from configs.main import load_config
 
 from .routers import data
@@ -50,12 +51,14 @@ def verify_database_state() -> None:
 app = FastAPI(title="German Load Forecast API", lifespan=lifespan)
 
 
-app.mount("/static", StaticFiles(directory="services/api/static"), name="static")
+config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
+
+app.mount("/static", StaticFiles(directory=config.api.static), name="static")
 
 
 app.include_router(data.router)
 
-templates = Jinja2Templates(directory="services/api/templates")
+templates = Jinja2Templates(directory=config.api.templates)
 
 
 @app.get("/")

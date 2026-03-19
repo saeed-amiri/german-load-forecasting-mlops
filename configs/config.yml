@@ -39,3 +39,4 @@ logging:
 # API settings
 api:
   templates: "services/api/templates"
+  static: "services/api/static"

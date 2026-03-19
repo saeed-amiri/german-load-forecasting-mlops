@@ -1,4 +1,4 @@
-.PHONY: lint lint-fix format
+.PHONY: lint lint-fix format clean-db
 
 # ======================
 # Format with ruff
@@ -17,3 +17,10 @@ lint-fix:
 format:
 	@echo "Running Ruff format on $(FILE)"
 	ruff format $(FILE)
+
+# ======================
+# Clean
+# ======================
+
+clean-db:
+	rm data/*.db

@@ -12,7 +12,7 @@ import logging
 from pathlib import Path
 
 
-def setup_logging(log_file: Path, level: int = logging.INFO, to_consle: bool = True) -> None:
+def setup_logging(log_file: Path, level: int = logging.INFO, to_console: bool = True) -> None:
     """
     Configures a root logger that outputs to both a file and
     the console.
@@ -39,7 +39,7 @@ def setup_logging(log_file: Path, level: int = logging.INFO, to_consle: bool = T
     root.addHandler(file_handler)
 
     # Console Handle
-    if to_consle:
+    if to_console:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(fmt)

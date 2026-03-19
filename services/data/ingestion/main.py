@@ -29,7 +29,7 @@ def run_ingestion() -> None:
     # 1. Setup
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     log_path: Path = resolve_service_log_path(config.logging, config.runtime, "ingestion")
-    setup_logging(log_file=log_path, level=config.logging.level, to_consle=config.logging.to_console)
+    setup_logging(log_file=log_path, level=config.logging.level, to_console=config.logging.to_console)
 
     logger.info("Starting ingestion-pipeline execution...")
 

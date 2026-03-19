@@ -15,3 +15,4 @@ class APIConfig(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     templates: Path
+    static: Path
