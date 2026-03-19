@@ -49,7 +49,7 @@ class SQLQualityEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    data_quality_checks: str = "quality/data_quality_checks.sql"
+    target_overview: str = "quality/target_overview.sql"
 
 
 class SQLEntrypoints(BaseModel):

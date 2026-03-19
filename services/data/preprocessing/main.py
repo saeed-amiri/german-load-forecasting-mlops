@@ -13,7 +13,7 @@ from configs.config_sql import sql_script_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
-from .sql_helpers import sql_executer, sql_validator
+from .sql_helpers import sql_executer, overview_target
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +31,7 @@ def run_validation(config: PipelineConfig, logger: logging.Logger) -> None:
     """
     Runs quality checks against the database and logs a summary report.
     """
-
-    sql_file_path = sql_script_path(config.sql.entrypoints.quality.data_quality_checks, config.runtime.sql_dir)
-
-    try:
-        stats_df: pd.DataFrame = sql_validator(config, sql_file_path, logger)
-
-        if not stats_df.empty:
-            report = stats_df.iloc[0].to_markdown()
-            logger.info(f"\n--- Data Quality Report ---\n{report}")
-        else:
-            logger.warning("Quality check returned no data.")
-
-    except Exception as err:
-        logger.error(f"Validation failed: {err}")
-        raise
+    overview_target(config, logger)
 
 
 def run_transformation(config: PipelineConfig) -> None:

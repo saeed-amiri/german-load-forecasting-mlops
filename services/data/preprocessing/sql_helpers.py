@@ -10,6 +10,7 @@ from pathlib import Path
 import pandas as pd
 
 from configs.main import PipelineConfig
+from configs.config_sql import sql_script_path
 
 
 def sql_executer(config: PipelineConfig, sql_file_path: Path, target_table: str, logger: logging.Logger) -> int:
@@ -47,3 +48,23 @@ def sql_validator(config: PipelineConfig, sql_file_path: Path, logger: logging.L
         stats_df = pd.read_sql(sql_query, conn)
 
     return stats_df
+
+
+def overview_target(config: PipelineConfig, logger: logging.Logger) -> None:
+    """
+    Log an overview of the target table
+    """
+    sql_file_path = sql_script_path(config.sql.entrypoints.quality.target_overview, config.runtime.sql_dir)
+
+    try:
+        stats_df: pd.DataFrame = sql_validator(config, sql_file_path, logger)
+
+        if not stats_df.empty:
+            report = stats_df.iloc[0].to_markdown()
+            logger.info(f"\n--- Target Overivew ---\n{report}")
+        else:
+            logger.warning("Target Overivew returned no data.")
+
+    except Exception as err:
+        logger.error(f"Validation failed: {err}")
+        raise
