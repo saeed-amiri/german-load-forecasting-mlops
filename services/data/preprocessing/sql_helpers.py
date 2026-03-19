@@ -1,71 +1,68 @@
-# services/datapreprocessing/sql_helpers.py
+# services/data/preprocessing/sql_helpers.py
 """
-Helpers for handling the sql related job for preprocessing
+Low-level helpers for handling SQL database connections and execution.
 """
 
-import logging
 import sqlite3
 from pathlib import Path
 
 import pandas as pd
+from jinja2 import Template
 
 
-def sql_executer(database: Path, sql_file_path: Path, target_table: str, logger: logging.Logger) -> int:
+def render_sql_template(sql_path: Path, context: dict) -> str:
     """
-    Executes a multi-statement SQL script and returns the resulting row count.
+    Load a SQL file and render it with Jinja2 context.
 
-    Transactions are handled automatically by the connection context manager.
+    Args:
+        sql_path: Path to the .sql file.
+        context: Dictionary of variables to inject into the template.
+
+    Returns:
+        The rendered SQL string.
     """
-    with sqlite3.connect(database) as conn:
-        logger.info(f"Reading SQL script from {sql_file_path}")
+    if not sql_path.exists():
+        raise FileNotFoundError(f"SQL file not found at: {sql_path}")
 
-        with open(sql_file_path, "r", encoding="utf8") as sql:
-            sql_query = sql.read()
+    with open(sql_path, "r", encoding="utf-8") as f:
+        template = Template(f.read())
 
+    return template.render(**context)
+
+
+def execute_script(database: Path, sql_query: str, target_table: str) -> int:
+    """
+    Executes a multi-statement SQL script (CREATE, INSERT, etc.)
+    and returns the row count of the target table.
+
+    Args:
+        database: Path to the SQLite database file.
+        sql_query: The SQL script to execute.
+        target_table: The table name to count rows for after execution.
+
+    Returns:
+        The number of rows in the target table.
+    """
+    db_path = str(database)
+
+    with sqlite3.connect(db_path) as conn:
+        # Execute the main transformation script
         conn.executescript(sql_query)
 
         cursor = conn.cursor()
-        cursor.execute(f"SELECT COUNT(*) FROM {target_table}")
+        cursor.execute(f'SELECT COUNT(*) FROM "{target_table}"')
         count = cursor.fetchone()[0]
+
     return count
 
 
-def sql_validator(database: Path, sql_file_path: Path) -> pd.DataFrame:
+def fetch_dataframe(database: Path, sql_query: str) -> pd.DataFrame:
     """
-    Executes a SQL script via pandas to validate the data
+    Executes a SQL query and returns the result as a Pandas DataFrame.
+    Useful for validation and statistics gathering.
     """
+    db_path = str(database)
+    with sqlite3.connect(db_path) as conn:
+        df = pd.read_sql_query(sql_query, conn)
 
-    if not sql_file_path.exists():
-        raise FileNotFoundError(f"Quality check script missing: {sql_file_path}")
-
-    with open(sql_file_path, "r", encoding="utf8") as f:
-        sql_query = f.read()
-
-    with sqlite3.connect(database) as conn:
-        stats_df = pd.read_sql(sql_query, conn)
-
-    return stats_df
-
-
-def overview_tables(database: Path, sql_file_path: Path, msg: str, logger: logging.Logger) -> None:
-    """
-    Log an overview of the target table
-
-    database: Path to the database
-    sql_file_path: Path to the sql file to execute
-    msg: Name or message at the top for log
-    logger: logger
-    """
-
-    try:
-        stats_df: pd.DataFrame = sql_validator(database, sql_file_path)
-
-        if not stats_df.empty:
-            report = stats_df.iloc[0].to_markdown()
-            logger.info(f"\n--- {msg} Overivew ---\n{report}")
-        else:
-            logger.warning("Target Overivew returned no data.")
-
-    except Exception as err:
-        logger.error(f"Validation failed: {err}")
-        raise
+    return df
