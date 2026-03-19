@@ -6,16 +6,14 @@ paths:
   database: "data/database.db"
 
 
-
-# Parameters for SQL handeling
 # Parameters for SQL handling
 sql:
   root: sql
   chunk_size: 50000
   tables:
-    staging: "stg_german_load"          # Layer 1 - clean staging table
-    features: "fct_german_load"         # Layer 2 - ML-ready features table
-    marts: "german_load_api"            # Layer 3 - API / serving table
+    staging: "stg_german_load"
+    features: "fct_german_load"
+    marts: "german_load_api"
   entrypoints:
     staging:
       stg_german_load: "staging/stg_german_load.sql"
