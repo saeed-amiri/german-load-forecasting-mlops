@@ -14,7 +14,7 @@ class SQLTables(BaseModel):
     """Maps to sql.tables in config.yml."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
-    
+
     raw_source_table: str = "raw_source_data"
     staging: str = "stg_german_load"
     features: str = "fct_german_load"
