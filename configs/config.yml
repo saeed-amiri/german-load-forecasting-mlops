@@ -33,6 +33,7 @@ logging:
   service_logs:
     ingestion: "ingest.log"
     preprocessing: "preprocess.log"
+    marts: "marts.log"
 
 
 # API settings
