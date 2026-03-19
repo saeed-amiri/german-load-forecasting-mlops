@@ -13,7 +13,7 @@ from configs.config_sql import sql_script_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
-from .sql_helpers import sql_executer, overview_target
+from .sql_helpers import sql_executer, overview_tables
 
 logger = logging.getLogger(__name__)
 
@@ -23,15 +23,18 @@ def run_model(config: PipelineConfig, script_name: str, target_table: str, layer
     sql_file_path = sql_script_path(script_name, config.runtime.sql_dir)
     logger.info(f"Executing {layer_name} model from {sql_file_path}...")
 
-    count = sql_executer(config, sql_file_path, target_table, logger)
+    count = sql_executer(config.paths.database, sql_file_path, target_table, logger)
     logger.info(f"SUCCESS: Created '{target_table}' with {count} rows.")
 
 
-def run_validation(config: PipelineConfig, logger: logging.Logger) -> None:
+def log_table_overview(config: PipelineConfig, logger: logging.Logger) -> None:
     """
     Runs quality checks against the database and logs a summary report.
     """
-    overview_target(config, logger)
+    database: Path = config.paths.database
+
+    target_overview = sql_script_path(config.sql.entrypoints.quality.target_overview, config.runtime.sql_dir)
+    overview_tables(database=database, sql_file_path=target_overview, msg='Target', logger=logger)
 
 
 def run_transformation(config: PipelineConfig) -> None:
@@ -62,7 +65,7 @@ def run_preprocessing() -> None:
 
     run_transformation(config)
 
-    run_validation(config, logger)
+    log_table_overview(config, logger)
 
 
 if __name__ == "__main__":
