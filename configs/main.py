@@ -5,6 +5,7 @@ Setting up the configurations for the pipeline
 
 import logging
 from pathlib import Path
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -31,7 +32,7 @@ class PipelineConfig(BaseModel):
     sql: SQLConfig
     logging: LoggingConfig
     api: APIConfig
-    runtime: RuntimePaths | None = None
+    runtime: Optional[RuntimePaths] = Field(default=None)
 
     @staticmethod
     def _to_abs(base: Path, value: Path) -> Path:

@@ -22,6 +22,7 @@ def run_model(config: PipelineConfig, script_name: str, target_table: str, layer
     """Execute one SQL model and log the resulting row count."""
     sql_file_path = sql_script_path(script_name, config.runtime.sql_dir)
     logger.info(f"Executing {layer_name} model from {sql_file_path}...")
+
     count = sql_executer(config, sql_file_path, target_table, logger)
     logger.info(f"SUCCESS: Created '{target_table}' with {count} rows.")
 
@@ -56,21 +57,9 @@ def run_transformation(config: PipelineConfig) -> None:
         logger.info(f"Connecting to database at {config.paths.database}")
         run_model(
             config,
-            config.sql.entrypoints.staging.stg_german_load,
-            config.sql.tables.staging,
-            "staging",
-        )
-        run_model(
-            config,
             config.sql.entrypoints.features.fct_german_load,
             config.sql.tables.features,
             "features",
-        )
-        run_model(
-            config,
-            config.sql.entrypoints.marts.german_load_api,
-            config.sql.tables.marts,
-            "marts",
         )
 
     except Exception as err:
