@@ -14,7 +14,7 @@ from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
 # We reuse the sql_helpers from preprocessing as they are generic utilities
-from services.data.preprocessing.sql_helpers import execute_script, render_sql_template
+from core.sql_helpers import execute_script, render_sql_template
 
 logger = logging.getLogger(__name__)
 

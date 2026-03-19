@@ -12,7 +12,7 @@ from configs.config_sql import sql_script_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
-from .sql_helpers import execute_script, fetch_dataframe, render_sql_template
+from core.sql_helpers import execute_script, fetch_dataframe, render_sql_template
 
 logger = logging.getLogger(__name__)
 
