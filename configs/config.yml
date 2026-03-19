@@ -1,7 +1,7 @@
 # configs/config.yaml
 
 paths:
-  raw_data: "data/raw/time_series-2020-10-06.csv"
+  raw_file: "data/raw/time_series-2020-10-06.csv"
   processed_data: "data/processed/processed.csv"
   database: "data/database.db"
 
@@ -11,6 +11,7 @@ sql:
   root: sql
   chunk_size: 50000
   tables:
+    raw_source_table: "raw_source_data"
     staging: "stg_german_load"
     features: "fct_german_load"
     marts: "german_load_api"
