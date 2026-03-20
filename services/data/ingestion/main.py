@@ -54,7 +54,7 @@ def run_ingestion() -> None:
         # 4. Prepare and Execute SQL Transformation
         sql_file_path = sql_script_path(config.sql.entrypoints.staging.stg_german_load, config.runtime.sql_dir)
 
-        with open(sql_file_path, "r") as f:
+        with open(sql_file_path, "r", encoding="utf8") as f:
             template = Template(f.read())
 
         context = {"raw_source_table": raw_table, "staging_table": staging_table, "columns": config.sql.columns.staging}
