@@ -23,8 +23,8 @@ def run_model(config: PipelineConfig, script_name: str, target_table: str, layer
 
     # Context for Preprocessing: Source is Staging, Target is Features
     context = {
-        "staging_table": config.sql.tables.staging,
-        "features_table": config.sql.tables.features,
+        "staging_table": config.sql.tables.staging.load,
+        "features_table": config.sql.tables.features.load,
     }
 
     logger.info(f"Executing {layer_name} model from {sql_file_path}...")
@@ -38,7 +38,7 @@ def run_model(config: PipelineConfig, script_name: str, target_table: str, layer
 def log_table_overview(config: PipelineConfig) -> None:
     """Runs quality checks against the Features table."""
     database: Path = config.paths.database
-    context = {"features_table": config.sql.tables.features}
+    context = {"features_table": config.sql.tables.features.load}
 
     target_overview = sql_script_path(config.sql.entrypoints.quality.target_overview, config.runtime.sql_dir)
 
@@ -65,7 +65,7 @@ def run_transformation(config: PipelineConfig) -> None:
     run_model(
         config,
         config.sql.entrypoints.features.fct_german_load,
-        config.sql.tables.features,
+        config.sql.tables.features.load,
         "features",
     )
 

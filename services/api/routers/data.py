@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from configs.main import load_config
+from configs.main import load_config, PipelineConfig
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ def get_config():
 
 @router.get("/data")
 def show_data_dashboard(request: Request):
-    config = get_config()
+    config: PipelineConfig = get_config()
 
     templates = Jinja2Templates(directory=config.api.templates)
 
@@ -50,13 +50,13 @@ def show_data_dashboard(request: Request):
         )
 
 
-def _plot_targets(config) -> go.Figure:
+def _plot_targets(config: PipelineConfig) -> go.Figure:
     """
     Reads recent HOURLY data from the FEATURES table to plot the load curve.
     The Marts table is aggregated, so we cannot plot a time-series from it.
     """
 
-    table_name = config.sql.tables.features
+    table_name: str = config.sql.tables.features.load
 
     with sqlite3.connect(config.paths.database) as conn:
         cursor = conn.cursor()
@@ -76,11 +76,11 @@ def _plot_targets(config) -> go.Figure:
     return fig
 
 
-def _get_mart_data(config) -> pd.DataFrame:
+def _get_mart_data(config: PipelineConfig) -> pd.DataFrame:
     """
     Fetches AGGREGATED data from the MARTS table for the dashboard overview table.
     """
-    table_name = config.sql.tables.marts
+    table_name = config.sql.tables.marts.load
 
     with sqlite3.connect(config.paths.database) as conn:
         # Basic validation

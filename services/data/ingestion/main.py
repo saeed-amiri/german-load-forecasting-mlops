@@ -35,8 +35,8 @@ def run_ingestion() -> None:
 
     try:
         # Define table names from config
-        raw_table = config.sql.tables.raw_source_table
-        staging_table = config.sql.tables.staging
+        raw_table = config.sql.tables.raw_sources.load
+        staging_table = config.sql.tables.staging.load
 
         # 2. Load Raw CSV
         logger.info(f"Reading CSV from {config.paths.raw_file}...")

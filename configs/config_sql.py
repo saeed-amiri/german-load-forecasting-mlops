@@ -10,15 +10,47 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class SQLRawTables(BaseModel):
+    """Tables for raw data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "raw_source_data"
+
+
+class SQLStagingTables(BaseModel):
+    """Tables for staging data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "stg_german_load"
+
+
+class SQLFeaturesTables(BaseModel):
+    """Tables for features data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "fct_german_load"
+
+
+class SQLMartsTables(BaseModel):
+    """Tables for marts data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "german_load_api"
+
+
 class SQLTables(BaseModel):
     """Maps to sql.tables in config.yml."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    raw_source_table: str = "raw_source_data"
-    staging: str = "stg_german_load"
-    features: str = "fct_german_load"
-    marts: str = "german_load_api"
+    raw_sources: SQLRawTables = Field(default_factory=SQLRawTables)
+    staging: SQLStagingTables = Field(default_factory=SQLStagingTables)
+    features: SQLFeaturesTables = Field(default_factory=SQLFeaturesTables)
+    marts: SQLMartsTables = Field(default_factory=SQLMartsTables)
 
 
 class SQLStagingEntrypoints(BaseModel):

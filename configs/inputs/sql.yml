@@ -1,10 +1,14 @@
 root: sql
 chunk_size: 50000
 tables:
-  raw_source_table: "raw_source_data"
-  staging: "stg_german_load"
-  features: "fct_german_load"
-  marts: "german_load_api"
+  raw_sources:
+    load: "raw_source_data"
+  staging:
+    load: "stg_german_load"
+  features:
+    load: "fct_german_load"
+  marts:
+    load: "german_load_api"
 entrypoints:
   staging:
     stg_german_load: "staging/stg_german_load.sql"
