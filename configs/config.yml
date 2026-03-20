@@ -1,57 +1,12 @@
 # configs/config.yaml
 
-paths:
-  raw_file: "data/raw/time_series-2020-10-06.csv"
-  processed_data: "data/processed/processed.csv"
-  database: "data/database.db"
-
-
+paths: {{ paths }}
+  
 # Parameters for SQL handling
-sql:
-  root: sql
-  chunk_size: 50000
-  tables:
-    raw_source_table: "raw_source_data"
-    staging: "stg_german_load"
-    features: "fct_german_load"
-    marts: "german_load_api"
-  entrypoints:
-    staging:
-      stg_german_load: "staging/stg_german_load.sql"
-    features:
-      fct_german_load: "features/fct_german_load.sql"
-    marts:
-      german_load_api: "marts/german_load_api.sql"
-    quality:
-      target_overview: "quality/target_overview.sql"
-  columns:
-    staging:
-      - clean: time
-        raw: utc_timestamp
-      - clean: load_actual
-        raw: DE_load_actual_entsoe_transparency
-      - clean: load_forecast
-        raw: DE_load_forecast_entsoe_transparency
-      - clean: solar_actual
-        raw: DE_solar_generation_actual
-      - clean: wind_actual
-        raw: DE_wind_generation_actual
-      - clean: wind_onshore
-        raw: DE_wind_onshore_generation_actual
-      - clean: wind_offshore
-        raw: DE_wind_offshore_generation_actual
+sql: {{ sql }}
 
 # logging settings for pipeline services
-logging:
-  level: "INFO"
-  to_console: true
-  service_logs:
-    ingestion: "ingest.log"
-    preprocessing: "preprocess.log"
-    marts: "marts.log"
-
+logging: {{ logging }}
 
 # API settings
-api:
-  templates: "services/api/templates"
-  static: "services/api/static"
+api: {{ api }}

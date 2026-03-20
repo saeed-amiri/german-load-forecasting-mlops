@@ -14,7 +14,7 @@ from .config_logs import LoggingConfig
 from .config_paths import PathSettings
 from .config_runtime import RuntimePaths
 from .config_sql import SQLConfig
-from .config_utils import initialize_project_root, parse_yaml_file
+from .config_utils import initialize_project_root, render_config_file
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,8 @@ def load_config(
 
     project_root, config_path = initialize_project_root(config_name, project_root, start_file, logger)
 
-    config_dict = parse_yaml_file(config_path, logger)
+    config_dict = render_config_file(config_path)
+
     config_dict["project_root"] = project_root
     config_dict["config_file"] = config_path
 
