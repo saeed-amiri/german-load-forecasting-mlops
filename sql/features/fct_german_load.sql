@@ -1,6 +1,6 @@
 -- sql/features/fct_german_load.sql
 
-DROP TABLE IF EXISTS fct_german_load;
+DROP TABLE IF EXISTS {{ features_table }};
 
 CREATE TABLE {{ features_table }} AS
 SELECT
