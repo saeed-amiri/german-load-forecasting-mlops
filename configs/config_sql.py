@@ -58,7 +58,7 @@ class SQLStagingEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    stg_german_load: str = "staging/stg_german_load.sql"
+    load: str = "staging/stg_german_load.sql"
 
 
 class SQLFeaturesEntrypoints(BaseModel):
@@ -66,7 +66,7 @@ class SQLFeaturesEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    fct_german_load: str = "features/fct_german_load.sql"
+    load: str = "features/fct_german_load.sql"
 
 
 class SQLMartsEntrypoints(BaseModel):
@@ -74,7 +74,7 @@ class SQLMartsEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    german_load_api: str = "marts/german_load_api.sql"
+    load: str = "marts/german_load_api.sql"
 
 
 class SQLQualityEntrypoints(BaseModel):
@@ -82,7 +82,7 @@ class SQLQualityEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    target_overview: str = "quality/target_overview.sql"
+    load_target: str = "quality/target_overview.sql"
 
 
 class SQLEntrypoints(BaseModel):

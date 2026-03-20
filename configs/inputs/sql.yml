@@ -11,13 +11,13 @@ tables:
     load: "german_load_api"
 entrypoints:
   staging:
-    stg_german_load: "staging/stg_german_load.sql"
+    load: "staging/stg_german_load.sql"
   features:
-    fct_german_load: "features/fct_german_load.sql"
+    load: "features/fct_german_load.sql"
   marts:
-    german_load_api: "marts/german_load_api.sql"
+    load: "marts/german_load_api.sql"
   quality:
-    target_overview: "quality/target_overview.sql"
+    load_target: "quality/target_overview.sql"
 columns:
   staging:
     - clean: time

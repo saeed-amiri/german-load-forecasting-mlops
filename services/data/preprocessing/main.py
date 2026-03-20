@@ -40,7 +40,7 @@ def log_table_overview(config: PipelineConfig) -> None:
     database: Path = config.paths.database
     context = {"features_table": config.sql.tables.features.load}
 
-    target_overview = sql_script_path(config.sql.entrypoints.quality.target_overview, config.runtime.sql_dir)
+    target_overview = sql_script_path(config.sql.entrypoints.quality.load_target, config.runtime.sql_dir)
 
     try:
         sql_query = render_sql_template(target_overview, context)
@@ -64,7 +64,7 @@ def run_transformation(config: PipelineConfig) -> None:
     # Only run the Features model
     run_model(
         config,
-        config.sql.entrypoints.features.fct_german_load,
+        config.sql.entrypoints.features.load,
         config.sql.tables.features.load,
         "features",
     )
