@@ -1,0 +1,2 @@
+templates: "services/api/templates"
+static: "services/api/static"

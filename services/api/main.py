@@ -29,7 +29,7 @@ def verify_database_state() -> None:
     """
     try:
         config = load_config(config_name="config", start_file=Path(__file__))
-        target_table = config.sql.tables.marts
+        target_table = config.sql.tables.marts.load
 
         with sqlite3.connect(config.paths.database) as conn:
             cursor = conn.cursor()

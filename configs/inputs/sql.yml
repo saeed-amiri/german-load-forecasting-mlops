@@ -1,0 +1,36 @@
+root: sql
+chunk_size: 50000
+tables:
+  raw_sources:
+    load: "raw_source_data"
+  staging:
+    load: "stg_german_load"
+  features:
+    load: "fct_german_load"
+  marts:
+    load: "german_load_api"
+entrypoints:
+  staging:
+    load: "staging/stg_german_load.sql"
+  features:
+    load: "features/fct_german_load.sql"
+  marts:
+    load: "marts/german_load_api.sql"
+  quality:
+    load_target: "quality/target_overview.sql"
+columns:
+  staging:
+    - clean: time
+      raw: utc_timestamp
+    - clean: load_actual
+      raw: DE_load_actual_entsoe_transparency
+    - clean: load_forecast
+      raw: DE_load_forecast_entsoe_transparency
+    - clean: solar_actual
+      raw: DE_solar_generation_actual
+    - clean: wind_actual
+      raw: DE_wind_generation_actual
+    - clean: wind_onshore
+      raw: DE_wind_onshore_generation_actual
+    - clean: wind_offshore
+      raw: DE_wind_offshore_generation_actual

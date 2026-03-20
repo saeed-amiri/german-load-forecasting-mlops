@@ -35,8 +35,8 @@ def run_ingestion() -> None:
 
     try:
         # Define table names from config
-        raw_table = config.sql.tables.raw_source_table
-        staging_table = config.sql.tables.staging
+        raw_table = config.sql.tables.raw_sources.load
+        staging_table = config.sql.tables.staging.load
 
         # 2. Load Raw CSV
         logger.info(f"Reading CSV from {config.paths.raw_file}...")
@@ -52,9 +52,9 @@ def run_ingestion() -> None:
         )
 
         # 4. Prepare and Execute SQL Transformation
-        sql_file_path = sql_script_path(config.sql.entrypoints.staging.stg_german_load, config.runtime.sql_dir)
+        sql_file_path = sql_script_path(config.sql.entrypoints.staging.load, config.runtime.sql_dir)
 
-        with open(sql_file_path, "r") as f:
+        with open(sql_file_path, "r", encoding="utf8") as f:
             template = Template(f.read())
 
         context = {"raw_source_table": raw_table, "staging_table": staging_table, "columns": config.sql.columns.staging}

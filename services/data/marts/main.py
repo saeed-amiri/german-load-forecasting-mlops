@@ -31,15 +31,15 @@ def run_marts_pipeline() -> None:
     logger.info("Starting Marts pipeline execution...")
 
     try:
-        sql_file_path = sql_script_path(config.sql.entrypoints.marts.german_load_api, config.runtime.sql_dir)
+        sql_file_path = sql_script_path(config.sql.entrypoints.marts.load, config.runtime.sql_dir)
 
         # Context only needs the source (features) and target (marts)
-        context = {"features_table": config.sql.tables.features, "marts_table": config.sql.tables.marts}
+        context = {"features_table": config.sql.tables.features.load, "marts_table": config.sql.tables.marts.load}
 
-        logger.info(f"Building mart table '{config.sql.tables.marts}'...")
+        logger.info(f"Building mart table '{config.sql.tables.marts.load}'...")
 
         sql_query = render_sql_template(sql_file_path, context)
-        count = execute_script(config.paths.database, sql_query, config.sql.tables.marts)
+        count = execute_script(config.paths.database, sql_query, config.sql.tables.marts.load)
 
         logger.info(f"SUCCESS: Mart table created with {count} rows.")
 
