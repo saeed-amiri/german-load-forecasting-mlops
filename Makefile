@@ -1,4 +1,14 @@
-.PHONY: lint lint-fix format clean-db
+.PHONY: api-load lint lint-fix format clean-db api-load
+
+# ======================
+# Manual runs
+# ======================
+api-load: clean-db
+	uv run python -m services.data.ingestion.main
+	uv run python -m services.data.preprocessing.main
+	uv run python -m services.data.marts.main
+	uv run uvicorn  services.api.main:app --reload
+
 
 # ======================
 # Format with ruff
@@ -23,4 +33,4 @@ format:
 # ======================
 
 clean-db:
-	rm data/*.db
+	rm data/*.db || true
