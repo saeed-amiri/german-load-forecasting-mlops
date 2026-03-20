@@ -24,7 +24,22 @@ sql:
       german_load_api: "marts/german_load_api.sql"
     quality:
       target_overview: "quality/target_overview.sql"
-
+  columns:
+    staging:
+      - clean: time
+        raw: utc_timestamp
+      - clean: load_actual
+        raw: DE_load_actual_entsoe_transparency
+      - clean: load_forecast
+        raw: DE_load_forecast_entsoe_transparency
+      - clean: solar_actual
+        raw: DE_solar_generation_actual
+      - clean: wind_actual
+        raw: DE_wind_generation_actual
+      - clean: wind_onshore
+        raw: DE_wind_onshore_generation_actual
+      - clean: wind_offshore
+        raw: DE_wind_offshore_generation_actual
 
 # logging settings for pipeline services
 logging:

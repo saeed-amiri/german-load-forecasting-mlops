@@ -57,7 +57,7 @@ def run_ingestion() -> None:
         with open(sql_file_path, "r") as f:
             template = Template(f.read())
 
-        context = {"raw_source_table": raw_table, "staging_table": staging_table}
+        context = {"raw_source_table": raw_table, "staging_table": staging_table, "columns": config.sql.columns.staging}
         sql_query = template.render(**context)
 
         logger.info("Executing staging transformation...")

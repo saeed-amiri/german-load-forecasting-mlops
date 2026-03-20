@@ -64,6 +64,27 @@ class SQLEntrypoints(BaseModel):
     quality: SQLQualityEntrypoints = Field(default_factory=SQLQualityEntrypoints)
 
 
+class ColumnsMapping(BaseModel):
+    """Columns names setting"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    clean: str
+    raw: str
+
+
+class SQLColumns(BaseModel):
+    """
+    Selecting the columns and clean naming them.
+    The clean names should be trated as fixed strings. Other sql files set based
+    on the clean names.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    staging: list[ColumnsMapping] = Field(default_factory=list)
+
+
 class SQLConfig(BaseModel):
     """Maps to the sql section of config.yml exactly."""
 
@@ -73,6 +94,7 @@ class SQLConfig(BaseModel):
     chunk_size: int = 50000
     tables: SQLTables = Field(default_factory=SQLTables)
     entrypoints: SQLEntrypoints = Field(default_factory=SQLEntrypoints)
+    columns: SQLColumns = Field(default_factory=SQLColumns)
 
 
 def sql_script_path(script_name: str, sql_dir: Path) -> Path:
