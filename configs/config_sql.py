@@ -40,6 +40,7 @@ class SQLMartsTables(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     load: str = "german_load_api"
+    load_melt: str = "load_melt"
 
 
 class SQLTables(BaseModel):
@@ -75,14 +76,7 @@ class SQLMartsEntrypoints(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     load: str = "marts/german_load_api.sql"
-
-
-class SQLQualityEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.quality."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    load_target: str = "quality/target_overview.sql"
+    load_melt: str = "marts/load_melt.sql"
 
 
 class SQLEntrypoints(BaseModel):
@@ -93,7 +87,6 @@ class SQLEntrypoints(BaseModel):
     staging: SQLStagingEntrypoints = Field(default_factory=SQLStagingEntrypoints)
     features: SQLFeaturesEntrypoints = Field(default_factory=SQLFeaturesEntrypoints)
     marts: SQLMartsEntrypoints = Field(default_factory=SQLMartsEntrypoints)
-    quality: SQLQualityEntrypoints = Field(default_factory=SQLQualityEntrypoints)
 
 
 class ColumnsMapping(BaseModel):
