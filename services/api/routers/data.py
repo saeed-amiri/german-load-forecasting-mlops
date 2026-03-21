@@ -34,7 +34,7 @@ def show_data_dashboard(request: Request):
         plot_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
 
         # Table uses Marts (Aggregated Stats)
-        stats_df = _get_mart_data(config)
+        stats_df = _load_peak_min_data(config)
         table_html = stats_df.to_html(classes="table table-striped", index=False)
 
         return templates.TemplateResponse("data.html", {"request": request, "plot": plot_html, "table": table_html})
@@ -81,7 +81,7 @@ def _plot_targets(config: PipelineConfig) -> go.Figure:
     return fig
 
 
-def _get_mart_data(config: PipelineConfig) -> pd.DataFrame:
+def _load_peak_min_data(config: PipelineConfig) -> pd.DataFrame:
     """
     Fetches AGGREGATED data from the MARTS table for the dashboard overview table.
     """
