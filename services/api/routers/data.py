@@ -30,14 +30,19 @@ def show_data_dashboard(request: Request):
 
     try:
         # Plot uses Features (Hourly Data)
-        fig = _plot_targets(config)
-        plot_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
+        fig_target = _plot_targets(config)
+        plot_target = fig_target.to_html(full_html=False, include_plotlyjs="cdn")
+        fig_feature = _plot_featuers(config)
+        plot_feature = fig_feature.to_html(full_html=False, include_plotlyjs="cdn")
 
         # Table uses Marts (Aggregated Stats)
         stats_df = _load_peak_min_data(config)
         table_html = stats_df.to_html(classes="table table-striped", index=False)
 
-        return templates.TemplateResponse("data.html", {"request": request, "plot": plot_html, "table": table_html})
+        return templates.TemplateResponse(
+            "data.html",
+            {"request": request, "plot_target": plot_target, "plot_feature": plot_feature, "table": table_html},
+        )
 
     except Exception as e:
         logger.error(f"Failed to generate dashboard: {e}")
@@ -45,7 +50,8 @@ def show_data_dashboard(request: Request):
             "data.html",
             {
                 "request": request,
-                "plot": f"<p class='text-danger'>Error loading plot: {e}</p>",
+                "plot_target": f"<p class='text-danger'>Error loading plot: {e}</p>",
+                "plot_feature": f"<p class='text-danger'>Error loading plot: {e}</p>",
                 "table": f"<p class='text-danger'>Error loading data: {e}</p>",
             },
         )
@@ -69,14 +75,42 @@ def _plot_targets(config: PipelineConfig) -> go.Figure:
             f"""
             SELECT *
             FROM "{table_name}"
-            WHERE time LIKE '2015%'
+            WHERE time LIKE '2015-01%'
             AND (Type = 'load_actual' OR Type = 'load_forecast')
             ORDER BY time DESC
             """,
             conn,
         )
 
-    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="German Electricity Load (Last 48 Hours)")
+    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="German Electricity Load")
+
+    return fig
+
+
+def _plot_featuers(config: PipelineConfig) -> go.Figure:
+    """
+    plot the features
+    """
+    table_name: str = config.sql.tables.marts.load_melt
+
+    with sqlite3.connect(config.paths.database) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+
+        if not cursor.fetchone():
+            raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
+        df = pd.read_sql_query(
+            f"""
+            SELECT *
+            FROM "{table_name}"
+            WHERE time LIKE '2015-01%'
+            AND (Type ='solar_actual' OR Type ='wind_actual' OR Type ='wind_onshore' OR Type ='wind_offshore')
+            ORDER BY time DESC
+            """,
+            conn,
+        )
+
+    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="Features")
 
     return fig
 

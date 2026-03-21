@@ -17,7 +17,11 @@
     </a>
     
     <div class="plot-container">
-        {{ plot | safe }}
+        {{ plot_target | safe }}
+    </div>
+
+    <div class="plot-container">
+        {{ plot_feature | safe }}
     </div>
 
     <h2>Historical Load Data</h2>
