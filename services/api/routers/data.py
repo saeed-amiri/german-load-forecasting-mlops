@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from configs.main import load_config, PipelineConfig
+from configs.main import PipelineConfig, load_config
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,7 @@ def show_data_dashboard(request: Request):
         table_html = stats_df.to_html(classes="table table-striped", index=False)
 
         return templates.TemplateResponse("data.html", {"request": request, "plot": plot_html, "table": table_html})
+
     except Exception as e:
         logger.error(f"Failed to generate dashboard: {e}")
         return templates.TemplateResponse(
@@ -56,23 +57,27 @@ def _plot_targets(config: PipelineConfig) -> go.Figure:
     The Marts table is aggregated, so we cannot plot a time-series from it.
     """
 
-    table_name: str = config.sql.tables.features.load
+    table_name: str = config.sql.tables.marts.load_melt
 
     with sqlite3.connect(config.paths.database) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+
         if not cursor.fetchone():
             raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
+        df = pd.read_sql_query(
+            f"""
+            SELECT *
+            FROM "{table_name}"
+            WHERE time LIKE '2015%'
+            AND (Type = 'load_actual' OR Type = 'load_forecast')
+            ORDER BY time DESC
+            """,
+            conn,
+        )
 
-        df = pd.read_sql_query(f'SELECT * FROM "{table_name}" ORDER BY time DESC LIMIT 48', conn)
+    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="German Electricity Load (Last 48 Hours)")
 
-    df["time"] = pd.to_datetime(df["time"])
-
-    df_melt = df.melt(
-        id_vars=["time"], value_vars=["load_actual", "load_forecast"], var_name="Type", value_name="Load (MW)"
-    )
-
-    fig = px.line(df_melt, x="time", y="Load (MW)", color="Type", title="German Electricity Load (Last 48 Hours)")
     return fig
 
 
