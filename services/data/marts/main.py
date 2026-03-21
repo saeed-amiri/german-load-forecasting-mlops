@@ -34,14 +34,24 @@ def run_marts_pipeline() -> None:
         sql_file_path = sql_script_path(config.sql.entrypoints.marts.load, config.runtime.sql_dir)
 
         # Context only needs the source (features) and target (marts)
-        context = {"features_table": config.sql.tables.features.load, "marts_table": config.sql.tables.marts.load}
+        context = {"features_table": config.sql.tables.features.load,
+                   "marts_table": config.sql.tables.marts.load,
+                   }
 
         logger.info(f"Building mart table '{config.sql.tables.marts.load}'...")
 
         sql_query = render_sql_template(sql_file_path, context)
         count = execute_script(config.paths.database, sql_query, config.sql.tables.marts.load)
-
         logger.info(f"SUCCESS: Mart table created with {count} rows.")
+
+        context = {
+            "features_table": config.sql.tables.features.load,
+            "load_melt": config.sql.tables.marts.load_melt,
+        }
+        sql_file_path = sql_script_path(config.sql.entrypoints.marts.load_melt, config.runtime.sql_dir)
+        sql_query1 = render_sql_template(sql_file_path, context)
+        count = execute_script(config.paths.database, sql_query1, config.sql.tables.marts.load_melt)
+
 
     except Exception as err:
         logger.critical("Marts pipeline failed!", exc_info=True)
