@@ -1,5 +1,6 @@
 # services/api/routers/data.py
 
+import logging
 import sqlite3
 from pathlib import Path
 
@@ -9,60 +10,140 @@ import plotly.graph_objects as go
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from configs.config_sql import sql_script_path
-from configs.main import load_config
+from configs.main import PipelineConfig, load_config
 
-config = load_config(config_name="config", start_file=Path(__file__))
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
-templates = Jinja2Templates(directory=config.api.templates)
+
+
+def get_config():
+    """Helper to load config lazily."""
+    return load_config(config_name="config", start_file=Path(__file__))
 
 
 @router.get("/data")
 def show_data_dashboard(request: Request):
-    fig = _plot_targets()
-    plot_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
-    table_html = _table_target_overview().to_html()
+    config: PipelineConfig = get_config()
 
-    return templates.TemplateResponse("data.html", {"request": request, "plot": plot_html, "table": table_html})
+    templates = Jinja2Templates(directory=config.api.templates)
+
+    try:
+        # Plot uses Features (Hourly Data)
+        fig_target = _plot_targets(config)
+        plot_target = fig_target.to_html(full_html=False, include_plotlyjs="cdn")
+        fig_feature = _plot_featuers(config)
+        plot_feature = fig_feature.to_html(full_html=False, include_plotlyjs="cdn")
+
+        # Table uses Marts (Aggregated Stats)
+        stats_df = _load_peak_min_data(config)
+        table_html = stats_df.to_html(classes="table table-striped", index=False)
+
+        return templates.TemplateResponse(
+            "data.html",
+            {"request": request, "plot_target": plot_target, "plot_feature": plot_feature, "table": table_html},
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate dashboard: {e}")
+        return templates.TemplateResponse(
+            "data.html",
+            {
+                "request": request,
+                "plot_target": f"<p class='text-danger'>Error loading plot: {e}</p>",
+                "plot_feature": f"<p class='text-danger'>Error loading plot: {e}</p>",
+                "table": f"<p class='text-danger'>Error loading data: {e}</p>",
+            },
+        )
 
 
-def _plot_targets() -> go.Figure:
+def _plot_targets(config: PipelineConfig) -> go.Figure:
+    """
+    Reads recent HOURLY data from the FEATURES table to plot the load curve.
+    The Marts table is aggregated, so we cannot plot a time-series from it.
+    """
+
+    table_name: str = config.sql.tables.marts.load_melt
 
     with sqlite3.connect(config.paths.database) as conn:
-        df = pd.read_sql(f"SELECT * FROM {config.sql.tables.marts} ORDER BY time DESC LIMIT 48", conn)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
 
-    df_melt = df.melt(
-        id_vars=["time"], value_vars=["load_actual", "load_forecast"], var_name="Type", value_name="Load (MW)"
-    )
-    fig = px.line(df_melt, x="time", y="Load (MW)", color="Type", title="German Electricity Load")
+        if not cursor.fetchone():
+            raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
+        df = pd.read_sql_query(
+            f"""
+            SELECT *
+            FROM "{table_name}"
+            WHERE time LIKE '2015-01%'
+            AND (Type = 'load_actual' OR Type = 'load_forecast')
+            ORDER BY time DESC
+            """,
+            conn,
+        )
+
+    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="German Electricity Load")
 
     return fig
 
 
-def _table_target_overview() -> pd.DataFrame:
-    sql = sql_script_path(config.sql.entrypoints.marts.german_load_api, config.runtime.sql_dir)
-    if not sql.exists():
-        raise FileNotFoundError(f"Quality check script missing: {sql}")
-
-    with open(sql, "r", encoding="utf8") as f:
-        sql_query = f.read()
+def _plot_featuers(config: PipelineConfig) -> go.Figure:
+    """
+    plot the features
+    """
+    table_name: str = config.sql.tables.marts.load_melt
 
     with sqlite3.connect(config.paths.database) as conn:
-        stats_df = pd.read_sql(sql_query, conn)
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
 
-    stats_df["peak_load"] = stats_df["peak_load"].astype(str) + " MW"
-    stats_df["min_load"] = stats_df["min_load"].astype(str) + " MW"
+        if not cursor.fetchone():
+            raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
+        df = pd.read_sql_query(
+            f"""
+            SELECT *
+            FROM "{table_name}"
+            WHERE time LIKE '2015-01%'
+            AND (Type ='solar_actual' OR Type ='wind_actual' OR Type ='wind_onshore' OR Type ='wind_offshore')
+            ORDER BY time DESC
+            """,
+            conn,
+        )
 
-    # 3. Rename columns for a cleaner look
-    stats_df = stats_df.rename(
-        columns={
-            "day": "Date",
-            "peak_load": "Peak Load",
-            "peak_time": "Time of Peak",
-            "min_load": "Minimum Load",
-            "min_time": "Time of Minimum",
-        }
-    )
+    fig = px.line(df, x="time", y="Load (MW)", color="Type", title="Features")
 
-    return stats_df
+    return fig
+
+
+def _load_peak_min_data(config: PipelineConfig) -> pd.DataFrame:
+    """
+    Fetches AGGREGATED data from the MARTS table for the dashboard overview table.
+    """
+    table_name = config.sql.tables.marts.load
+
+    with sqlite3.connect(config.paths.database) as conn:
+        # Basic validation
+        cursor = conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+        if not cursor.fetchone():
+            return pd.DataFrame()
+
+        df = pd.read_sql_query(f'SELECT * FROM "{table_name}" LIMIT 10', conn)
+
+    if not df.empty:
+        if "peak_load" in df.columns:
+            df["peak_load"] = df["peak_load"].astype(str) + " MW"
+        if "min_load" in df.columns:
+            df["min_load"] = df["min_load"].astype(str) + " MW"
+
+        df = df.rename(
+            columns={
+                "day": "Date",
+                "peak_load": "Peak Load",
+                "peak_time": "Time of Peak",
+                "min_load": "Minimum Load",
+                "min_time": "Time of Minimum",
+            }
+        )
+
+    return df

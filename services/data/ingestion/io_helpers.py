@@ -1,70 +1,53 @@
+# services/data/ingestion/io_helpers.py
 """
-IO helper functions for ingestion of raw data
+IO helper functions for ingestion.
 """
 
-import logging
 import sqlite3
 from contextlib import closing
 from pathlib import Path
 
 import pandas as pd
 
-from configs.main import PipelineConfig
 
-
-def load_raw_data(config: PipelineConfig, logger: logging.Logger) -> pd.DataFrame:
+def load_csv_data(file_path: Path) -> pd.DataFrame:
     """
-    Loads raw data from a CSV file defined in the configuration.
-
-    Raises:
-        FileNotFoundError: If the path does not exist.
-        ValueError: If the file is empty or corrupted.
-        RuntimeError: For unexpected OS-level IO issues.
+    Loads raw data from a CSV file.
     """
-    file_path = Path(config.paths.raw_file)
-
     if not file_path.exists():
-        logger.error(f"Data source missing: {file_path.absolute()}")
-        raise FileNotFoundError(f"No file found at {file_path}")
+        raise FileNotFoundError(f"Data source missing: {file_path}")
 
     try:
         df = pd.read_csv(file_path, low_memory=False)
-
         if df.empty:
-            logger.warning(f"File at {file_path} is empty.")
-
+            raise ValueError(f"File at {file_path} is empty.")
         return df
-
-    except pd.errors.EmptyDataError as err:
-        logger.error(f"File is empty: {file_path}")
-        raise ValueError("Target CSV contains no data.") from err
-
     except Exception as err:
-        logger.exception(f"Unexpected error loading {file_path}")
-        raise RuntimeError("Failed to load pipeline data.") from err
+        raise RuntimeError(f"Failed to read CSV: {err}") from err
 
 
-def save_to_sqlite(df: pd.DataFrame, config: PipelineConfig, logger: logging.Logger) -> None:
+def write_df_to_table(df: pd.DataFrame, database_path: Path, table_name: str, chunk_size: int) -> None:
     """
-    Persists DataFrame to a SQLite database with transactional integrity.
-
-    Args:
-        df: The source DataFrame.
-        target_table: Target table in SQLite.
-        db_path: Path to the .db or .sqlite file.
+    Writes a DataFrame to a specific table in the SQLite database.
     """
-    stg_table: str = config.sql.entrypoints.staging.stg_german_load
-    if df.empty:
-        logger.warning(f"No data to save for table '{stg_table}'. Skipping.")
-        return
+    with closing(sqlite3.connect(str(database_path))) as conn:
+        with conn:
+            df.to_sql(name=table_name, con=conn, if_exists="replace", index=False, chunksize=chunk_size)
 
-    try:
-        with closing(sqlite3.connect(config.paths.database)) as conn:
-            with conn:
-                df.to_sql(name=stg_table, con=conn, if_exists="replace", index=False, chunksize=config.sql.chunk_size)
 
-        logger.info(f"Successfully updated '{stg_table}' with {len(df)} rows.")
+def execute_sql_script(database_path: Path, sql_query: str) -> None:
+    """
+    Executes a raw SQL script (multiple statements) in the database.
+    """
+    with sqlite3.connect(str(database_path)) as conn:
+        conn.executescript(sql_query)
 
-    except sqlite3.Error as err:
-        logger.error(f"SQLite Database error for '{stg_table}': {err}")
-        raise RuntimeError(f"Failed to write to SQLite at {config.paths.database}") from err
+
+def drop_table(database_path: Path, table_name: str) -> None:
+    """
+    Drops a table if it exists.
+    """
+    with sqlite3.connect(str(database_path)) as conn:
+        cursor = conn.cursor()
+        cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+        conn.commit()

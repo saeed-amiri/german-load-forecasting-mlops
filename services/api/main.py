@@ -1,49 +1,66 @@
 # services/api/main.py
 import logging
 import sqlite3
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from configs import PipelineConfig
 from configs.main import load_config
-from services.data.preprocessing.main import run_transformation
 
 from .routers import data
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="German Load Forecast API")
-app.mount("/static", StaticFiles(directory="services/api/static"), name="static")
 
-# Register the router
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    verify_database_state()
+    yield
+
+
+def verify_database_state() -> None:
+    """
+    Verifies that the required database tables exist.
+    """
+    try:
+        config = load_config(config_name="config", start_file=Path(__file__))
+        target_table = config.sql.tables.marts.load
+
+        with sqlite3.connect(config.paths.database) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (target_table,))
+            exists = cursor.fetchone()
+
+        if not exists:
+            logger.warning(
+                f"API Table '{target_table}' not found in database. "
+                "Please run the pipeline services (ingestion -> preprocessing -> marts)."
+            )
+        else:
+            logger.info(f"API Startup check passed. Table '{target_table}' found.")
+
+    except Exception as e:
+        logger.error(f"Failed to verify database state on startup: {e}")
+
+
+app = FastAPI(title="German Load Forecast API", lifespan=lifespan)
+
+
+config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
+
+app.mount("/static", StaticFiles(directory=config.api.static), name="static")
+
+
 app.include_router(data.router)
 
-templates = Jinja2Templates(directory="services/api/templates")
+templates = Jinja2Templates(directory=config.api.templates)
 
 
 @app.get("/")
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.on_event("startup")
-def ensure_api_tables() -> None:
-    config = load_config(config_name="config", start_file=Path(__file__))
-    target_table = config.sql.tables.marts
-
-    with sqlite3.connect(config.paths.database) as conn:
-        existing = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
-
-    if target_table in existing:
-        return
-
-    if "raw_data" not in existing:
-        raise RuntimeError(
-            f"Missing source table 'raw_data' in {config.paths.database}. "
-            "Run the ingestion pipeline before starting the API."
-        )
-
-    logger.info("Table '%s' is missing. Building SQL models for API startup.", target_table)
-    run_transformation(config)

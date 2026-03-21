@@ -1,8 +1,8 @@
 -- sql/features/fct_german_load.sql
 
-DROP TABLE IF EXISTS fct_german_load;
+DROP TABLE IF EXISTS {{ features_table }};
 
-CREATE TABLE fct_german_load AS
+CREATE TABLE {{ features_table }} AS
 SELECT
     time,
     load_actual,
@@ -17,4 +17,4 @@ SELECT
     LAG(load_actual, 1) OVER (ORDER BY time) AS load_actual_lag_1,
     LAG(load_actual, 24) OVER (ORDER BY time) AS load_actual_lag_24,
     LAG(load_forecast, 1) OVER (ORDER BY time) AS load_forecast_lag_1
-FROM stg_german_load;
+FROM {{ staging_table }};

@@ -10,14 +10,48 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class SQLRawTables(BaseModel):
+    """Tables for raw data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "raw_source_data"
+
+
+class SQLStagingTables(BaseModel):
+    """Tables for staging data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "stg_german_load"
+
+
+class SQLFeaturesTables(BaseModel):
+    """Tables for features data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "fct_german_load"
+
+
+class SQLMartsTables(BaseModel):
+    """Tables for marts data"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    load: str = "german_load_api"
+    load_melt: str = "load_melt"
+
+
 class SQLTables(BaseModel):
     """Maps to sql.tables in config.yml."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    staging: str = "stg_german_load"
-    features: str = "fct_german_load"
-    marts: str = "german_load_api"
+    raw_sources: SQLRawTables = Field(default_factory=SQLRawTables)
+    staging: SQLStagingTables = Field(default_factory=SQLStagingTables)
+    features: SQLFeaturesTables = Field(default_factory=SQLFeaturesTables)
+    marts: SQLMartsTables = Field(default_factory=SQLMartsTables)
 
 
 class SQLStagingEntrypoints(BaseModel):
@@ -25,7 +59,7 @@ class SQLStagingEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    stg_german_load: str = "staging/stg_german_load.sql"
+    load: str = "staging/stg_german_load.sql"
 
 
 class SQLFeaturesEntrypoints(BaseModel):
@@ -33,7 +67,8 @@ class SQLFeaturesEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    fct_german_load: str = "features/fct_german_load.sql"
+    load: str = "features/fct_german_load.sql"
+    load_log: str = "features/load_log.sql"
 
 
 class SQLMartsEntrypoints(BaseModel):
@@ -41,15 +76,8 @@ class SQLMartsEntrypoints(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    german_load_api: str = "marts/german_load_api.sql"
-
-
-class SQLQualityEntrypoints(BaseModel):
-    """Maps to sql.entrypoints.quality."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    data_quality_checks: str = "quality/data_quality_checks.sql"
+    load: str = "marts/german_load_api.sql"
+    load_melt: str = "marts/load_melt.sql"
 
 
 class SQLEntrypoints(BaseModel):
@@ -60,7 +88,27 @@ class SQLEntrypoints(BaseModel):
     staging: SQLStagingEntrypoints = Field(default_factory=SQLStagingEntrypoints)
     features: SQLFeaturesEntrypoints = Field(default_factory=SQLFeaturesEntrypoints)
     marts: SQLMartsEntrypoints = Field(default_factory=SQLMartsEntrypoints)
-    quality: SQLQualityEntrypoints = Field(default_factory=SQLQualityEntrypoints)
+
+
+class ColumnsMapping(BaseModel):
+    """Columns names setting"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    clean: str
+    raw: str
+
+
+class SQLColumns(BaseModel):
+    """
+    Selecting the columns and clean naming them.
+    The clean names should be trated as fixed strings. Other sql files set based
+    on the clean names.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    staging: list[ColumnsMapping] = Field(default_factory=list)
 
 
 class SQLConfig(BaseModel):
@@ -72,6 +120,7 @@ class SQLConfig(BaseModel):
     chunk_size: int = 50000
     tables: SQLTables = Field(default_factory=SQLTables)
     entrypoints: SQLEntrypoints = Field(default_factory=SQLEntrypoints)
+    columns: SQLColumns = Field(default_factory=SQLColumns)
 
 
 def sql_script_path(script_name: str, sql_dir: Path) -> Path:

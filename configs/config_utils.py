@@ -6,9 +6,29 @@ It will be handled by configs/main.py
 
 import logging
 from pathlib import Path
-from typing import Any
 
 import yaml
+from jinja2 import Environment, FileSystemLoader
+
+
+def render_config_file(config_path: Path) -> dict:
+    """Read the config file and handle the input ingestion with ninja"""
+    input_dir: Path = config_path.parent / "inputs"
+    context = {}
+    for name in ["sql", "api", "paths", "logging"]:
+        file_path = input_dir / f"{name}.yml"
+        if not file_path.exists():
+            raise FileNotFoundError(f"Missing expected config input: {file_path}")
+        context[name] = yaml.safe_load(file_path.read_text())
+
+    env = Environment(loader=FileSystemLoader(config_path.parent))
+    template = env.get_template(config_path.name)
+    rendered = template.render(**context)
+
+    try:
+        return yaml.safe_load(rendered) or {}
+    except yaml.YAMLError as err:
+        raise RuntimeError("Failed to parse rendered YAML from %s", config_path) from err
 
 
 def discover_project_root(start_path: Path | None = None) -> Path:
@@ -52,13 +72,3 @@ def initialize_project_root(
 
     config_path = resolve_config_path(project_root=project_root, config_name=config_name)
     return project_root, config_path
-
-
-def parse_yaml_file(config_path: Path, logger: logging.Logger) -> dict[str, Any]:
-    with open(config_path, "r", encoding="utf8") as f:
-        try:
-            config_dict = yaml.safe_load(f) or {}
-        except yaml.YAMLError as exc:
-            logger.error("Failed to parse YAML at %s", config_path, exc_info=True)
-            raise exc
-    return config_dict
