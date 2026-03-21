@@ -68,6 +68,7 @@ class SQLFeaturesEntrypoints(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     load: str = "features/fct_german_load.sql"
+    load_log: str = "features/load_log.sql"
 
 
 class SQLMartsEntrypoints(BaseModel):

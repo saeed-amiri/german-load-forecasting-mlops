@@ -15,6 +15,7 @@ entrypoints:
     load: "staging/stg_german_load.sql"
   features:
     load: "features/fct_german_load.sql"
+    load_log: "features/load_log.sql"
   marts:
     load: "marts/german_load_api.sql"
     load_melt: "marts/load_melt.sql"

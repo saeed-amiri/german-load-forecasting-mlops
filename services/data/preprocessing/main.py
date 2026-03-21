@@ -40,7 +40,7 @@ def log_table_overview(config: PipelineConfig) -> None:
     database: Path = config.paths.database
     context = {"features_table": config.sql.tables.features.load}
 
-    target_overview = sql_script_path(config.sql.entrypoints.marts.load, config.runtime.sql_dir)
+    target_overview = sql_script_path(config.sql.entrypoints.features.load_log, config.runtime.sql_dir)
 
     try:
         sql_query = render_sql_template(target_overview, context)
