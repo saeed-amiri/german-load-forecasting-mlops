@@ -1,0 +1,5 @@
+outs:
+- md5: 6fd6bd0f72f7386716ec0befc6037807
+  size: 93778673
+  hash: md5
+  path: time_series-2020-10-06.csv
