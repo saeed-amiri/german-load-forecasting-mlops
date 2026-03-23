@@ -1,53 +1,38 @@
 # services/data/ingestion/io_helpers.py
 """
 IO helper functions for ingestion.
+DuckDB-native ingestion: no pandas, no chunking, no memory blowups.
 """
 
-import sqlite3
-from contextlib import closing
 from pathlib import Path
 
-import pandas as pd
+import duckdb
 
 
-def load_csv_data(file_path: Path) -> pd.DataFrame:
+def write_csv_to_table(csv_path: Path, database_path: Path, table_name: str) -> None:
     """
-    Loads raw data from a CSV file.
+    DuckDB-native CSV ingestion.
+    Reads CSV directly using DuckDB's vectorized engine.
+    Zero memory overhead, extremely fast.
     """
-    if not file_path.exists():
-        raise FileNotFoundError(f"Data source missing: {file_path}")
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Data source missing: {csv_path}")
 
-    try:
-        df = pd.read_csv(file_path, low_memory=False)
-        if df.empty:
-            raise ValueError(f"File at {file_path} is empty.")
-        return df
-    except Exception as err:
-        raise RuntimeError(f"Failed to read CSV: {err}") from err
-
-
-def write_df_to_table(df: pd.DataFrame, database_path: Path, table_name: str, chunk_size: int) -> None:
-    """
-    Writes a DataFrame to a specific table in the SQLite database.
-    """
-    with closing(sqlite3.connect(str(database_path))) as conn:
-        with conn:
-            df.to_sql(name=table_name, con=conn, if_exists="replace", index=False, chunksize=chunk_size)
+    with duckdb.connect(str(database_path)) as conn:
+        conn.execute(f"""
+            CREATE OR REPLACE TABLE {table_name} AS
+            SELECT *, now() AS ingested_at
+            FROM read_csv_auto('{csv_path}', header=True);
+        """)
 
 
 def execute_sql_script(database_path: Path, sql_query: str) -> None:
-    """
-    Executes a raw SQL script (multiple statements) in the database.
-    """
-    with sqlite3.connect(str(database_path)) as conn:
-        conn.executescript(sql_query)
+    """Executes SQL in DuckDB."""
+    with duckdb.connect(str(database_path)) as conn:
+        conn.execute(sql_query)
 
 
 def drop_table(database_path: Path, table_name: str) -> None:
-    """
-    Drops a table if it exists.
-    """
-    with sqlite3.connect(str(database_path)) as conn:
-        cursor = conn.cursor()
-        cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
-        conn.commit()
+    """Drops a table if it exists."""
+    with duckdb.connect(str(database_path)) as conn:
+        conn.execute(f"DROP TABLE IF EXISTS {table_name}")
