@@ -12,21 +12,29 @@ from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
 from .context import SourceContext
-from .database import create_table_from_csv, execute_sql
+from .database import create_table_from_csv, execute_sql, get_table_stats
 
 logger = logging.getLogger(__name__)
 
 
 def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
-    """load and dump the data into a daatbase"""
+    """
+    Loads full CSV into permanent Raw table, then transforms to Staging.
+    Logs detailed stats for audit.
+    """
     try:
         logger.info(f"Processing source: {ctx.source_name}")
 
         raw_table = f"raw_{ctx.source_name}"
         staging_table = ctx.staging_table
 
-        logger.info(f"Loading full CSV into raw table '{raw_table}'...")
+        logger.info(f"Loading full CSV into permanent raw table '{raw_table}'...")
         create_table_from_csv(conn, raw_table, csv_path=ctx.raw_file)
+
+        raw_stats = get_table_stats(conn, raw_table)
+        logger.info(
+            f"RAW TABLE CREATED | Name: '{raw_table}' | Rows: {raw_stats['rows']:,} | Columns: {raw_stats['columns']}"
+        )
 
         with open(ctx.sql_template_path, "r", encoding="utf8") as f:
             template = Template(f.read())
@@ -42,10 +50,22 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
         logger.info("Executing staging transformation...")
         execute_sql(conn, sql_query)
 
+        staging_stats = get_table_stats(conn, staging_table)
+        logger.info(
+            f"STAGING TABLE CREATED | Name: '{staging_table}' | "
+            f"Rows: {staging_stats['rows']:,} | Columns: {staging_stats['columns']}"
+        )
+
+        logger.info(f"DATABASE FILE: {ctx.database}")
+
+        logger.info(f"SCHEMA MAPPING for '{staging_table}':")
+        for col in ctx.columns:
+            logger.info(f"  -> {col.raw:<40} | {col.clean}")
+
         logger.info(f"SUCCESS: Source '{ctx.source_name}' processed.")
 
     except Exception as err:
-        logger.error("Failed")
+        logger.error(f"Failed to process source '{ctx.source_name}'", exc_info=True)
         raise RuntimeError(f"Processing {ctx.raw_file} Failed!") from err
 
 
