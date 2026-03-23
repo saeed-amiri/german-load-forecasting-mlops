@@ -3,7 +3,7 @@
 import re
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 # ---------------------------------------------------------
 # 1. Generic building blocks
@@ -70,31 +70,32 @@ class DataSourceConfig(BaseModel):
 # ---------------------------------------------------------
 
 
-class DataSources(BaseModel):
+class DataSources(RootModel[dict[str, DataSourceConfig]]):
     """
-    A wrapper around a dict[str, DataSourceConfig] that supports:
-        - dot notation: sources.load
-        - dict access: sources["load"]
+    A Pydantic RootModel that acts as a dictionary but supports
+    dot-notation access (sources.load).
+
+    Pydantic stores the underlying dictionary in self.root.
     """
-
-    model_config = ConfigDict(extra="forbid")
-
-    data: dict[str, DataSourceConfig] = Field(default_factory=dict)
 
     def __getattr__(self, item):
+        # Map attribute access to dictionary access on self.root
         try:
-            return self.data[item]
+            return self.root[item]
         except KeyError:
             raise AttributeError(item)
 
     def __getitem__(self, item):
-        return self.data[item]
+        return self.root[item]
 
     def keys(self):
-        return self.data.keys()
+        return self.root.keys()
 
     def items(self):
-        return self.data.items()
+        return self.root.items()
+
+    def get(self, item, default=None):
+        return self.root.get(item, default)
 
 
 # ---------------------------------------------------------
