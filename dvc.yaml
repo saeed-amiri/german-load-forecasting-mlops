@@ -1,42 +1,12 @@
 stages:
-  ingestions:
-    cmd: uv run python -m services.data.ingestions.main
+  ingestion:
+    cmd: uv run python -m services.data.ingestion.main
     deps:
       - data/raw/time_series-2020-10-06.csv
-      - services/data/ingestions
+      - services/data/ingestion
       - sql/staging
       - core/
     outs:
-      - data/database.db
+      - data/raw/database.duckdb
 
-  preprocess:
-    cmd: uv run python -m services.data.preprocessing.main
-    deps:
-      - data/database.db
-      - services/data/preprocessing
-      - sql/features
-      - core/
-    outs:
-      - data/database.db
-  
-  marts:
-    cmd: uv run python -m services.data.marts.main
-    deps:
-      - data/database.db
-      - services/data/marts
-      - sql/marts
-      - core/
-    outs:
-      - data/database.db
-  
-  api:
-    cmd: uv run python -m services.api.main
-    deps:
-      - data/database.db
-      - services/api/
-      - sql/marts
-      - core/
-    outs:
-      - data/database.db
-  
     
