@@ -18,8 +18,8 @@ def drop_table(conn: duckdb.DuckDBPyConnection, table_name: str) -> None:
     conn.execute(f"DROP TABLE IF EXISTS {table_name}")
 
 
-def create_table_from_csv(conn: duckdb.DuckDBPyConnection, table_name: str, csv_path: Path) -> None:
+def create_table_from_csv(conn: duckdb.DuckDBPyConnection, raw_table: str, csv_path: Path) -> None:
     """
     Ingests a CSV into a table using DuckDB's specific auto-loader.
     """
-    conn.execute(f"CREATE TABLE {table_name} AS SELECT * FROM read_csv_auto('{csv_path}')")
+    conn.execute(f"CREATE OR REPLACE TABLE {raw_table} AS SELECT * FROM read_csv_auto('{csv_path}')")

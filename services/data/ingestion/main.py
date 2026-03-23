@@ -12,28 +12,29 @@ from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
 from .context import SourceContext
-from .database import create_table_from_csv, drop_table, execute_sql
+from .database import create_table_from_csv, execute_sql
 
 logger = logging.getLogger(__name__)
 
 
-def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext):
-    """
-    Orchestrates the processing of a single source.
-    """
+def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
+    """load and dump the data into a daatbase"""
     try:
         logger.info(f"Processing source: {ctx.source_name}")
 
-        logger.info(f"Loading CSV into raw table '{ctx.raw_table}'...")
-        create_table_from_csv(conn, table_name=ctx.raw_table, csv_path=ctx.raw_file)
+        raw_table = f"raw_{ctx.source_name}"
+        staging_table = ctx.staging_table
+
+        logger.info(f"Loading full CSV into raw table '{raw_table}'...")
+        create_table_from_csv(conn, raw_table, csv_path=ctx.raw_file)
 
         with open(ctx.sql_template_path, "r", encoding="utf8") as f:
             template = Template(f.read())
 
         columns_dict = {col.clean: col for col in ctx.columns}
         sql_query = template.render(
-            raw_source_table=ctx.raw_table,
-            staging_table=ctx.staging_table,
+            raw_source_table=raw_table,
+            staging_table=staging_table,
             columns=ctx.columns,
             colmap=columns_dict,
         )
@@ -43,9 +44,9 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext):
 
         logger.info(f"SUCCESS: Source '{ctx.source_name}' processed.")
 
-    finally:
-        logger.debug(f"Cleaning up temporary table '{ctx.raw_table}'...")
-        drop_table(conn, ctx.raw_table)
+    except Exception as err:
+        logger.error("Failed")
+        raise RuntimeError(f"Processing {ctx.raw_file} Failed!") from err
 
 
 def run_ingestion() -> None:
