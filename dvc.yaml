@@ -5,6 +5,7 @@ stages:
       - data/raw/time_series-2020-10-06.csv
       - services/data/ingestion
       - sql/staging
+      - configs/
       - core/
     outs:
       - data/raw/database.duckdb

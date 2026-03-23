@@ -1,0 +1,34 @@
+schema: '2.0'
+stages:
+  ingestion:
+    cmd: uv run python -m services.data.ingestion.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: df2ff9d78e1f6ffe38939c2645c6c35c.dir
+      size: 48998
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 6ce246442943333040bb4c8fa8ed8f75.dir
+      size: 32603
+      nfiles: 7
+    - path: data/raw/time_series-2020-10-06.csv
+      hash: md5
+      md5: 6fd6bd0f72f7386716ec0befc6037807
+      size: 93778673
+    - path: services/data/ingestion
+      hash: md5
+      md5: 138affd82ca567468bce02078d6ad314.dir
+      size: 25700
+      nfiles: 9
+    - path: sql/staging
+      hash: md5
+      md5: 222a8ee14136eb3f4d20d988a1071ea4.dir
+      size: 338
+      nfiles: 1
+    outs:
+    - path: data/raw/database.duckdb
+      hash: md5
+      md5: 1140ecf8fe305739610beaacd0acec46
+      size: 30158848
