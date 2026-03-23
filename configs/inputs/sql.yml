@@ -1,46 +1,45 @@
 root: sql
 chunk_size: 50000
 sources:
-  data:
-    load:
-      frequency: hourly
-      timestamp: utc_timestamp
-      raw_path: data/raw/load.parquet
+  load:
+    frequency: hourly
+    timestamp: utc_timestamp
+    raw_path: data/raw/load.parquet
 
-      columns:
-        - raw: utc_timestamp
-          clean: time
-        - raw: DE_load_actual_entsoe_transparency
-          clean: load_actual
-        - raw: DE_load_forecast_entsoe_transparency
-          clean: load_forecast
-        - raw: DE_solar_generation_actual
-          clean: solar_actual
-        - raw: DE_wind_generation_actual
-          clean: wind_actual
-        - raw: DE_wind_onshore_generation_actual
-          clean: wind_onshore
-        - raw: DE_wind_offshore_generation_actual
-          clean: wind_offshore
+    columns:
+      - raw: utc_timestamp
+        clean: time
+      - raw: DE_load_actual_entsoe_transparency
+        clean: load_actual
+      - raw: DE_load_forecast_entsoe_transparency
+        clean: load_forecast
+      - raw: DE_solar_generation_actual
+        clean: solar_actual
+      - raw: DE_wind_generation_actual
+        clean: wind_actual
+      - raw: DE_wind_onshore_generation_actual
+        clean: wind_onshore
+      - raw: DE_wind_offshore_generation_actual
+        clean: wind_offshore
 
-      staging:
-        tables:
-          main: stg_german_load
-        sql_files:
-          main: staging/stg_german_load.sql
+    staging:
+      tables:
+        main: stg_german_load
+      sql_files:
+        main: staging/stg_german_load.sql
 
-      features:
-        tables:
-          main: fct_german_load
-          log: fct_german_load_log
-        sql_files:
-          load: features/fct_german_load.sql
-          log: features/load_log.sql
+    features:
+      tables:
+        main: fct_german_load
+        log: fct_german_load_log
+      sql_files:
+        load: features/fct_german_load.sql
+        log: features/load_log.sql
 
-      marts:
-        tables:
-          main: german_load_api
-          melt: load_melt
-        sql_files:
-          load: marts/german_load_api.sql
-          load_melt: marts/load_melt.sql
+    marts:
+      tables:
+        main: german_load_api
+        melt: load_melt
+      sql_files:
+        load: marts/german_load_api.sql
+        load_melt: marts/load_melt.sql
