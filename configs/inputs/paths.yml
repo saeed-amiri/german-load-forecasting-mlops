@@ -1,3 +1,3 @@
 raw_file: "data/raw/time_series-2020-10-06.csv"
 processed_data: "data/processed/processed.csv"
-database: "data/database.db"
+database: "data/raw/database.duckdb"
