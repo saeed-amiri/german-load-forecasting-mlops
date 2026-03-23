@@ -42,7 +42,6 @@ class PipelineConfig(BaseModel):
     def resolve_paths_and_runtime(self) -> PipelineConfig:
         resolved_paths = self.paths.model_copy(
             update={
-                "raw_file": self._to_abs(self.project_root, self.paths.raw_file),
                 "processed_file": self._to_abs(self.project_root, self.paths.processed_file),
                 "database": self._to_abs(self.project_root, self.paths.database),
             }

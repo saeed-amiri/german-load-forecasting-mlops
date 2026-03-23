@@ -37,7 +37,7 @@ class SourceContext:
 
         return cls(
             source_name=source_name,
-            raw_file=cfg.paths.raw_file,
+            raw_file=source_cfg.raw_file,
             database=cfg.paths.database,
             staging_table=staging_table,
             raw_table=raw_table,

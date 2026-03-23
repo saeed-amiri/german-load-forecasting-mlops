@@ -56,7 +56,7 @@ class DataSourceConfig(BaseModel):
 
     frequency: str
     timestamp: str
-    raw_path: str
+    raw_file: str
 
     columns: list[ColumnMapping] = Field(default_factory=list)
 

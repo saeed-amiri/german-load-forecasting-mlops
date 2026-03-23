@@ -4,7 +4,7 @@ sources:
   load:
     frequency: hourly
     timestamp: utc_timestamp
-    raw_path: data/raw/load.parquet
+    raw_file: data/raw/time_series-2020-10-06.csv
 
     columns:
       - raw: utc_timestamp
