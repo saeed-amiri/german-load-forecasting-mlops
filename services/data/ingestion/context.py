@@ -21,23 +21,26 @@ class SourceContext:
 
     @classmethod
     def from_config(cls, source_name: str, cfg: PipelineConfig):
-        # Navigate the deep config once
         source_cfg = cfg.sql.sources.get(source_name)
         if not source_cfg:
             raise ValueError(f"Source {source_name} not found")
 
-        staging_table = source_cfg.staging.tables.main
-        raw_table = f"raw_{staging_table}_tmp"
+        if cfg.runtime is None:
+            raise RuntimeError("Runtime configuration is not initialized.")
 
-        # Resolve paths
         sql_path = sql_script_path(
             source_cfg.staging.sql_files.main,
             cfg.runtime.sql_dir,
         )
 
+        staging_table = source_cfg.staging.tables.main
+        raw_table = f"raw_{source_name}"
+
+        raw_file_path = cfg.project_root / source_cfg.raw_file
+
         return cls(
             source_name=source_name,
-            raw_file=source_cfg.raw_file,
+            raw_file=raw_file_path,
             database=cfg.paths.database,
             staging_table=staging_table,
             raw_table=raw_table,
