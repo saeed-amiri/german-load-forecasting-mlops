@@ -14,6 +14,6 @@ class PathSettings(BaseModel):
 
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    raw_file: Path = Field(alias="raw_data")
     processed_file: Path = Field(alias="processed_data")
     database: Path
+    marts_dir: Path = Field(alias="marts_data_dir")

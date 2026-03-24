@@ -1,0 +1,100 @@
+schema: '2.0'
+stages:
+  ingestion:
+    cmd: uv run python -m services.data.ingestion.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/raw/time_series-2020-10-06.csv
+      hash: md5
+      md5: 6fd6bd0f72f7386716ec0befc6037807
+      size: 93778673
+    - path: services/data/ingestion
+      hash: md5
+      md5: 3f208cac6e2c36ed8e9e60215d2e1224.dir
+      size: 23286
+      nfiles: 8
+    - path: sql/staging
+      hash: md5
+      md5: a28dfb73cf1e5805957b38aa07502451.dir
+      size: 292
+      nfiles: 1
+    outs:
+    - path: data/raw/database.duckdb
+      hash: md5
+      md5: 9e62772e252bd8ea65c4bc07361f23d9
+      size: 30420992
+  preprocessing:
+    cmd: uv run python -m services.data.preprocessing.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/raw/database.duckdb
+      hash: md5
+      md5: 9e62772e252bd8ea65c4bc07361f23d9
+      size: 30420992
+    - path: services/data/preprocessing
+      hash: md5
+      md5: 1fdfbe1b0375e71cdeb587abb1a6d22c.dir
+      size: 27162
+      nfiles: 8
+    - path: sql/features/
+      hash: md5
+      md5: e68b55bb46f1368640ade4e70ae76bda.dir
+      size: 1001
+      nfiles: 2
+    outs:
+    - path: data/processed/
+      hash: md5
+      md5: bd8075a94ac067004b6703b184b5103e.dir
+      size: 1482636
+      nfiles: 1
+  marts:
+    cmd: uv run python -m services.data.marts.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/processed/processed.parquet
+      hash: md5
+      md5: 31cb4628e48f87b36d8ed4ff965f2744
+      size: 1482636
+    - path: services/data/marts
+      hash: md5
+      md5: 9ad1f840225461581fb5cd4c94d2d9ec.dir
+      size: 13668
+      nfiles: 6
+    - path: sql/marts/
+      hash: md5
+      md5: 5023eec40675c032f86eec03bda72b9d.dir
+      size: 1874
+      nfiles: 2
+    outs:
+    - path: data/marts/
+      hash: md5
+      md5: 784b70f12b068fbe46b5e20d818f86ca.dir
+      size: 1496497
+      nfiles: 2

@@ -1,4 +1,4 @@
--- services/data/sql/quality_check.sql
+-- sql/features/load_log.sql
 
 -- calculate key statistics for monitoring
 
@@ -12,4 +12,4 @@ SELECT
     -- Check for missing values, should be 0 if cleaning worked
     SUM(CASE WHEN load_actual IS NULL THEN 1 ELSE 0 END) as null_counts
 from
-    fct_german_load;
+    {{ target_table }};

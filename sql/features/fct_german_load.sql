@@ -1,8 +1,5 @@
 -- sql/features/fct_german_load.sql
 
-DROP TABLE IF EXISTS {{ features_table }};
-
-CREATE TABLE {{ features_table }} AS
 SELECT
     time,
     load_actual,
@@ -12,9 +9,14 @@ SELECT
     wind_onshore,
     wind_offshore,
     load_actual - load_forecast AS forecast_error,
-    CAST(strftime('%H', time) AS INTEGER) AS hour_of_day,
-    CAST(strftime('%w', time) AS INTEGER) AS day_of_week,
+    
+    hour(time) AS hour_of_day,
+    
+    dayofweek(time) AS day_of_week,
+    
+    -- Lag features
     LAG(load_actual, 1) OVER (ORDER BY time) AS load_actual_lag_1,
     LAG(load_actual, 24) OVER (ORDER BY time) AS load_actual_lag_24,
     LAG(load_forecast, 1) OVER (ORDER BY time) AS load_forecast_lag_1
-FROM {{ staging_table }};
+FROM {{ staging_table }}
+ORDER BY time;

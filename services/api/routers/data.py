@@ -1,9 +1,9 @@
 # services/api/routers/data.py
 
 import logging
-import sqlite3
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -11,32 +11,39 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
 from configs.main import PipelineConfig, load_config
+from services.api.context import APIContext
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-def get_config():
-    """Helper to load config lazily."""
-    return load_config(config_name="config", start_file=Path(__file__))
+def _get_runtime_context(request: Request) -> tuple[PipelineConfig, APIContext]:
+    config = getattr(request.app.state, "config", None)
+    api_ctx = getattr(request.app.state, "api_ctx", None)
+
+    if config is None or api_ctx is None:
+        config = load_config(config_name="config", start_file=Path(__file__))
+        api_ctx = APIContext.from_config(config)
+
+    return config, api_ctx
 
 
 @router.get("/data")
 def show_data_dashboard(request: Request):
-    config: PipelineConfig = get_config()
+    _, api_ctx = _get_runtime_context(request)
 
-    templates = Jinja2Templates(directory=config.api.templates)
+    templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
 
     try:
         # Plot uses Features (Hourly Data)
-        fig_target = _plot_targets(config)
+        fig_target = _plot_targets(api_ctx)
         plot_target = fig_target.to_html(full_html=False, include_plotlyjs="cdn")
-        fig_feature = _plot_featuers(config)
+        fig_feature = _plot_features(api_ctx)
         plot_feature = fig_feature.to_html(full_html=False, include_plotlyjs="cdn")
 
         # Table uses Marts (Aggregated Stats)
-        stats_df = _load_peak_min_data(config)
+        stats_df = _load_peak_min_data(api_ctx)
         table_html = stats_df.to_html(classes="table table-striped", index=False)
 
         return templates.TemplateResponse(
@@ -57,78 +64,63 @@ def show_data_dashboard(request: Request):
         )
 
 
-def _plot_targets(config: PipelineConfig) -> go.Figure:
+def _plot_targets(ctx: APIContext) -> go.Figure:
     """
     Reads recent HOURLY data from the FEATURES table to plot the load curve.
     The Marts table is aggregated, so we cannot plot a time-series from it.
     """
 
-    table_name: str = config.sql.tables.marts.load_melt
+    if not ctx.marts_melt_parquet.exists():
+        raise RuntimeError(f"Marts melt parquet '{ctx.marts_melt_parquet}' not found. Run marts.")
 
-    with sqlite3.connect(config.paths.database) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
-
-        if not cursor.fetchone():
-            raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
-        df = pd.read_sql_query(
+    with duckdb.connect() as conn:
+        df = conn.execute(
             f"""
             SELECT *
-            FROM "{table_name}"
-            WHERE time LIKE '2015-01%'
-            AND (Type = 'load_actual' OR Type = 'load_forecast')
+            FROM '{ctx.marts_melt_parquet}'
+            WHERE strftime(time, '%Y-%m') = '2015-01'
+              AND Type IN ('load_actual', 'load_forecast')
             ORDER BY time DESC
-            """,
-            conn,
-        )
+            """
+        ).fetchdf()
 
     fig = px.line(df, x="time", y="Load (MW)", color="Type", title="German Electricity Load")
 
     return fig
 
 
-def _plot_featuers(config: PipelineConfig) -> go.Figure:
+def _plot_features(ctx: APIContext) -> go.Figure:
     """
     plot the features
     """
-    table_name: str = config.sql.tables.marts.load_melt
+    if not ctx.marts_melt_parquet.exists():
+        raise RuntimeError(f"Marts melt parquet '{ctx.marts_melt_parquet}' not found. Run marts.")
 
-    with sqlite3.connect(config.paths.database) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
-
-        if not cursor.fetchone():
-            raise RuntimeError(f"Features table '{table_name}' not found. Run preprocessing.")
-        df = pd.read_sql_query(
+    with duckdb.connect() as conn:
+        df = conn.execute(
             f"""
             SELECT *
-            FROM "{table_name}"
-            WHERE time LIKE '2015-01%'
-            AND (Type ='solar_actual' OR Type ='wind_actual' OR Type ='wind_onshore' OR Type ='wind_offshore')
+            FROM '{ctx.marts_melt_parquet}'
+            WHERE strftime(time, '%Y-%m') = '2015-01'
+              AND Type IN ('solar_actual', 'wind_actual', 'wind_onshore', 'wind_offshore')
             ORDER BY time DESC
-            """,
-            conn,
-        )
+            """
+        ).fetchdf()
 
     fig = px.line(df, x="time", y="Load (MW)", color="Type", title="Features")
 
     return fig
 
 
-def _load_peak_min_data(config: PipelineConfig) -> pd.DataFrame:
+def _load_peak_min_data(ctx: APIContext) -> pd.DataFrame:
     """
     Fetches AGGREGATED data from the MARTS table for the dashboard overview table.
     """
-    table_name = config.sql.tables.marts.load
+    if not ctx.marts_main_parquet.exists():
+        return pd.DataFrame()
 
-    with sqlite3.connect(config.paths.database) as conn:
-        # Basic validation
-        cursor = conn.cursor()
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
-        if not cursor.fetchone():
-            return pd.DataFrame()
-
-        df = pd.read_sql_query(f'SELECT * FROM "{table_name}" LIMIT 10', conn)
+    with duckdb.connect() as conn:
+        df = conn.execute(f"SELECT * FROM '{ctx.marts_main_parquet}' LIMIT 10").fetchdf()
 
     if not df.empty:
         if "peak_load" in df.columns:
