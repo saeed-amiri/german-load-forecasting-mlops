@@ -2,9 +2,7 @@
 ## Extra
 *.pdf
 structure.sh
-data/
 models/
-!services/data
 !**/.gitkeep
 inspect_data.py
 playground.sql

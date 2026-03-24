@@ -1,0 +1,4 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = https://dagshub.com/saeed-amiri/german-load-forecasting-mlops.dvc

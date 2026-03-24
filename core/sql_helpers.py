@@ -1,25 +1,21 @@
-# services/data/preprocessing/sql_helpers.py
+# core/sql_helpers.py
 """
-Low-level helpers for handling SQL database connections and execution.
+Low-level helpers for handling DuckDB connections and Parquet export.
 """
 
-import sqlite3
+import logging
 from pathlib import Path
 
+import duckdb
 import pandas as pd
 from jinja2 import Template
+
+logger = logging.getLogger(__name__)
 
 
 def render_sql_template(sql_path: Path, context: dict) -> str:
     """
     Load a SQL file and render it with Jinja2 context.
-
-    Args:
-        sql_path: Path to the .sql file.
-        context: Dictionary of variables to inject into the template.
-
-    Returns:
-        The rendered SQL string.
     """
     if not sql_path.exists():
         raise FileNotFoundError(f"SQL file not found at: {sql_path}")
@@ -30,39 +26,32 @@ def render_sql_template(sql_path: Path, context: dict) -> str:
     return template.render(**context)
 
 
-def execute_script(database: Path, sql_query: str, target_table: str) -> int:
+def execute_and_export(conn: duckdb.DuckDBPyConnection, sql_query: str, output_path: Path) -> int:
     """
-    Executes a multi-statement SQL script (CREATE, INSERT, etc.)
-    and returns the row count of the target table.
-
-    Args:
-        database: Path to the SQLite database file.
-        sql_query: The SQL script to execute.
-        target_table: The table name to count rows for after execution.
-
-    Returns:
-        The number of rows in the target table.
+    Executes a SQL SELECT query and exports the result to a Parquet file.
+    Returns the number of rows written.
     """
-    db_path = str(database)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    clean_sql = sql_query.strip().rstrip(";")
+    copy_sql = f"COPY ({clean_sql}) TO '{output_path}' (FORMAT PARQUET, COMPRESSION ZSTD);"
+    conn.execute(copy_sql)
 
-    with sqlite3.connect(db_path) as conn:
-        # Execute the main transformation script
-        conn.executescript(sql_query)
-
-        cursor = conn.cursor()
-        cursor.execute(f'SELECT COUNT(*) FROM "{target_table}"')
-        count = cursor.fetchone()[0]
-
-    return count
+    count_df = conn.execute(f"SELECT COUNT(*) FROM '{output_path}'").fetchone()
+    return count_df[0] if count_df else 0
 
 
-def fetch_dataframe(database: Path, sql_query: str) -> pd.DataFrame:
+def fetch_dataframe(conn: duckdb.DuckDBPyConnection, sql_query: str) -> pd.DataFrame:
     """
     Executes a SQL query and returns the result as a Pandas DataFrame.
-    Useful for validation and statistics gathering.
     """
-    db_path = str(database)
-    with sqlite3.connect(db_path) as conn:
-        df = pd.read_sql_query(sql_query, conn)
+    return conn.execute(sql_query).fetchdf()
 
-    return df
+
+def attach_sqlite(conn: duckdb.DuckDBPyConnection, sqlite_path: Path, alias: str = "legacy_db") -> None:
+    """
+    Optional: Helper to attach an old SQLite database if you need to migrate data.
+    """
+    logger.info(f"Attaching SQLite database: {sqlite_path}")
+    conn.execute("INSTALL sqlite;")
+    conn.execute("LOAD sqlite;")
+    conn.execute(f"CALL sqlite_attach('{sqlite_path}', attach_name='{alias}', read_only=true);")

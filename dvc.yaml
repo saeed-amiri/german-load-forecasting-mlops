@@ -1,0 +1,33 @@
+stages:
+  ingestion:
+    cmd: uv run python -m services.data.ingestion.main
+    deps:
+      - data/raw/time_series-2020-10-06.csv
+      - services/data/ingestion
+      - sql/staging
+      - configs/
+      - core/
+    outs:
+      - data/raw/database.duckdb
+
+  preprocessing:
+    cmd: uv run python -m services.data.preprocessing.main
+    deps:
+      - data/raw/database.duckdb
+      - services/data/preprocessing
+      - sql/features/
+      - configs/
+      - core/
+    outs:
+      - data/processed/
+
+  marts:
+    cmd: uv run python -m services.data.marts.main
+    deps:
+      - data/processed/processed.parquet
+      - services/data/marts
+      - sql/marts/
+      - configs/
+      - core/
+    outs:
+      - data/marts/
