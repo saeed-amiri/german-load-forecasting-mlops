@@ -7,5 +7,4 @@ SELECT
     {% endfor %}
 FROM {{ raw_source_table }}
 WHERE 
-    utc_timestamp IS NOT NULL
-    AND {{ colmap['load_actual'].raw }} IS NOT NULL;
+    {{ timestamp_raw }} IS NOT NULL;

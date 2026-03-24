@@ -1,2 +1,2 @@
-processed_data: "data/processed/processed.csv"
+processed_data: "data/processed/processed.parquet"
 database: "data/raw/database.duckdb"

@@ -1,3 +1,4 @@
+# configs/inputs/sql.yml
 root: sql
 chunk_size: 50000
 sources:
@@ -30,7 +31,7 @@ sources:
 
     features:
       tables:
-        main: fct_german_load
+        load: fct_german_load
         log: fct_german_load_log
       sql_files:
         load: features/fct_german_load.sql

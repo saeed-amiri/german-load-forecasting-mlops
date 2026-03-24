@@ -10,4 +10,13 @@ stages:
     outs:
       - data/raw/database.duckdb
 
-    
+  preprocessing:
+    cmd: uv run python -m services.data.preprocessing.main
+    deps:
+      - data/raw/database.duckdb
+      - services/data/preprocessing
+      - sql/features/
+      - configs/
+      - core/
+    outs:
+      - data/processed/

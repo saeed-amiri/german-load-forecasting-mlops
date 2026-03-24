@@ -16,11 +16,12 @@ class SourceContext:
     database: Path
     staging_table: str
     raw_table: str
+    timestamp_column: str
     columns: list[ColumnMapping]
     sql_template_path: Path
 
     @classmethod
-    def from_config(cls, source_name: str, cfg: PipelineConfig):
+    def from_config(cls, source_name: str, cfg: PipelineConfig) -> SourceContext:
         source_cfg = cfg.sql.sources.get(source_name)
         if not source_cfg:
             raise ValueError(f"Source {source_name} not found")
@@ -44,6 +45,7 @@ class SourceContext:
             database=cfg.paths.database,
             staging_table=staging_table,
             raw_table=raw_table,
+            timestamp_column=source_cfg.timestamp,
             columns=source_cfg.columns,
             sql_template_path=sql_path,
         )

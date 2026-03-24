@@ -25,7 +25,7 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
     try:
         logger.info(f"Processing source: {ctx.source_name}")
 
-        raw_table = f"raw_{ctx.source_name}"
+        raw_table = ctx.raw_table
         staging_table = ctx.staging_table
 
         logger.info(f"Loading full CSV into permanent raw table '{raw_table}'...")
@@ -39,12 +39,11 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
         with open(ctx.sql_template_path, "r", encoding="utf8") as f:
             template = Template(f.read())
 
-        columns_dict = {col.clean: col for col in ctx.columns}
         sql_query = template.render(
             raw_source_table=raw_table,
             staging_table=staging_table,
             columns=ctx.columns,
-            colmap=columns_dict,
+            timestamp_raw=ctx.timestamp_column,
         )
 
         logger.info("Executing staging transformation...")
@@ -74,6 +73,9 @@ def run_ingestion() -> None:
     Main entry point for ingestion.
     """
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
+    if config.runtime is None:
+        raise RuntimeError("Runtime configuration is not initialized.")
+
     log_path: Path = resolve_service_log_path(config.logging, config.runtime, "ingestion")
     setup_logging(log_file=log_path, level=config.logging.level, to_console=config.logging.to_console)
 

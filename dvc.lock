@@ -5,13 +5,13 @@ stages:
     deps:
     - path: configs/
       hash: md5
-      md5: df2ff9d78e1f6ffe38939c2645c6c35c.dir
-      size: 48998
+      md5: c3c0d1db816ad82358454e6246b678cb.dir
+      size: 48645
       nfiles: 24
     - path: core/
       hash: md5
-      md5: 6ce246442943333040bb4c8fa8ed8f75.dir
-      size: 32603
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
       nfiles: 7
     - path: data/raw/time_series-2020-10-06.csv
       hash: md5
@@ -19,16 +19,49 @@ stages:
       size: 93778673
     - path: services/data/ingestion
       hash: md5
-      md5: 138affd82ca567468bce02078d6ad314.dir
-      size: 25700
-      nfiles: 9
+      md5: 3f208cac6e2c36ed8e9e60215d2e1224.dir
+      size: 23286
+      nfiles: 8
     - path: sql/staging
       hash: md5
-      md5: 222a8ee14136eb3f4d20d988a1071ea4.dir
-      size: 338
+      md5: a28dfb73cf1e5805957b38aa07502451.dir
+      size: 292
       nfiles: 1
     outs:
     - path: data/raw/database.duckdb
       hash: md5
-      md5: 1140ecf8fe305739610beaacd0acec46
-      size: 30158848
+      md5: f81c882cf6fad56dc40d88678f919c6a
+      size: 30420992
+  preprocessing:
+    cmd: uv run python -m services.data.preprocessing.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: c3c0d1db816ad82358454e6246b678cb.dir
+      size: 48645
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/raw/database.duckdb
+      hash: md5
+      md5: f81c882cf6fad56dc40d88678f919c6a
+      size: 30420992
+    - path: services/data/preprocessing
+      hash: md5
+      md5: 1fdfbe1b0375e71cdeb587abb1a6d22c.dir
+      size: 27162
+      nfiles: 8
+    - path: sql/features/
+      hash: md5
+      md5: e68b55bb46f1368640ade4e70ae76bda.dir
+      size: 1001
+      nfiles: 2
+    outs:
+    - path: data/processed/
+      hash: md5
+      md5: bd8075a94ac067004b6703b184b5103e.dir
+      size: 1482636
+      nfiles: 1
