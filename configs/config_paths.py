@@ -16,3 +16,4 @@ class PathSettings(BaseModel):
 
     processed_file: Path = Field(alias="processed_data")
     database: Path
+    marts_dir: Path = Field(alias="marts_data_dir")

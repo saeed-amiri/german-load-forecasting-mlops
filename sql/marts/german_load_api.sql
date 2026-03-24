@@ -8,7 +8,7 @@ CREATE TABLE {{ marts_table }} AS
 WITH ranked_load AS (
     SELECT
         DATE(time) AS day,
-        strftime('%H:%M', time) AS hour_of_day,
+        strftime(time, '%H:%M') AS hour_of_day,
         load_actual,
         -- Identify the peak load row for each day
         ROW_NUMBER() OVER (PARTITION BY DATE(time) ORDER BY load_actual DESC) AS peak_rank,

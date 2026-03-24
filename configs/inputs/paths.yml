@@ -1,2 +1,3 @@
 processed_data: "data/processed/processed.parquet"
 database: "data/raw/database.duckdb"
+marts_data_dir: "data/marts"

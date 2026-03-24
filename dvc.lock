@@ -5,8 +5,8 @@ stages:
     deps:
     - path: configs/
       hash: md5
-      md5: c3c0d1db816ad82358454e6246b678cb.dir
-      size: 48645
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
       nfiles: 24
     - path: core/
       hash: md5
@@ -30,15 +30,15 @@ stages:
     outs:
     - path: data/raw/database.duckdb
       hash: md5
-      md5: f81c882cf6fad56dc40d88678f919c6a
+      md5: 9e62772e252bd8ea65c4bc07361f23d9
       size: 30420992
   preprocessing:
     cmd: uv run python -m services.data.preprocessing.main
     deps:
     - path: configs/
       hash: md5
-      md5: c3c0d1db816ad82358454e6246b678cb.dir
-      size: 48645
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
       nfiles: 24
     - path: core/
       hash: md5
@@ -47,7 +47,7 @@ stages:
       nfiles: 7
     - path: data/raw/database.duckdb
       hash: md5
-      md5: f81c882cf6fad56dc40d88678f919c6a
+      md5: 9e62772e252bd8ea65c4bc07361f23d9
       size: 30420992
     - path: services/data/preprocessing
       hash: md5
@@ -65,3 +65,36 @@ stages:
       md5: bd8075a94ac067004b6703b184b5103e.dir
       size: 1482636
       nfiles: 1
+  marts:
+    cmd: uv run python -m services.data.marts.main
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/processed/processed.parquet
+      hash: md5
+      md5: 31cb4628e48f87b36d8ed4ff965f2744
+      size: 1482636
+    - path: services/data/marts
+      hash: md5
+      md5: 9ad1f840225461581fb5cd4c94d2d9ec.dir
+      size: 13668
+      nfiles: 6
+    - path: sql/marts/
+      hash: md5
+      md5: 5023eec40675c032f86eec03bda72b9d.dir
+      size: 1874
+      nfiles: 2
+    outs:
+    - path: data/marts/
+      hash: md5
+      md5: 784b70f12b068fbe46b5e20d818f86ca.dir
+      size: 1496497
+      nfiles: 2

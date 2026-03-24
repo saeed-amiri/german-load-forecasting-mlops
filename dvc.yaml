@@ -20,3 +20,14 @@ stages:
       - core/
     outs:
       - data/processed/
+
+  marts:
+    cmd: uv run python -m services.data.marts.main
+    deps:
+      - data/processed/processed.parquet
+      - services/data/marts
+      - sql/marts/
+      - configs/
+      - core/
+    outs:
+      - data/marts/

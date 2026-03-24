@@ -44,6 +44,7 @@ class PipelineConfig(BaseModel):
             update={
                 "processed_file": self._to_abs(self.project_root, self.paths.processed_file),
                 "database": self._to_abs(self.project_root, self.paths.database),
+                "marts_dir": self._to_abs(self.project_root, self.paths.marts_dir),
             }
         )
 
