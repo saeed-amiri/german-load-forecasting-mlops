@@ -1,11 +1,12 @@
 schema: '2.0'
 stages:
   ingestion:
-    cmd: uv run python -m services.data.ingestion.main
+    cmd: "docker run --rm --pull=never --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-ingestion:$IMAGE_TAG\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -17,9 +18,25 @@ stages:
       hash: md5
       md5: 6fd6bd0f72f7386716ec0befc6037807
       size: 93778673
+    - path: docker/base/Dockerfile
+      hash: md5
+      md5: 3f40d325ead885e9d032f425119fee9f
+      size: 607
+    - path: docker/base/requirements.txt
+      hash: md5
+      md5: 73b61d3d40156577dbad43732d90569d
+      size: 84
+    - path: docker/ingestion/Dockerfile
+      hash: md5
+      md5: 8530d6a66a18ae89a612293c32954ce8
+      size: 379
+    - path: docker/ingestion/requirements.txt
+      hash: md5
+      md5: d41d8cd98f00b204e9800998ecf8427e
+      size: 0
     - path: services/data/ingestion
       hash: md5
-      md5: 3f208cac6e2c36ed8e9e60215d2e1224.dir
+      md5: d9deaaa1ab08057e726617422e1e6f7d.dir
       size: 23286
       nfiles: 8
     - path: sql/staging
@@ -30,14 +47,15 @@ stages:
     outs:
     - path: data/raw/database.duckdb
       hash: md5
-      md5: 9e62772e252bd8ea65c4bc07361f23d9
-      size: 30420992
+      md5: a618945112554f8d761d98ac74b05797
+      size: 30158848
   preprocessing:
-    cmd: uv run python -m services.data.preprocessing.main
+    cmd: "docker run --rm --pull=never --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-preprocessing:$IMAGE_TAG\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -47,12 +65,28 @@ stages:
       nfiles: 7
     - path: data/raw/database.duckdb
       hash: md5
-      md5: 9e62772e252bd8ea65c4bc07361f23d9
-      size: 30420992
+      md5: a618945112554f8d761d98ac74b05797
+      size: 30158848
+    - path: docker/base/Dockerfile
+      hash: md5
+      md5: 3f40d325ead885e9d032f425119fee9f
+      size: 607
+    - path: docker/base/requirements.txt
+      hash: md5
+      md5: 73b61d3d40156577dbad43732d90569d
+      size: 84
+    - path: docker/preprocessing/Dockerfile
+      hash: md5
+      md5: eee0f3ec3084cee41cadcb89a8b0cf3a
+      size: 399
+    - path: docker/preprocessing/requirements.txt
+      hash: md5
+      md5: cd64ee97966e009daac3f73a7f29ea5a
+      size: 13
     - path: services/data/preprocessing
       hash: md5
-      md5: 1fdfbe1b0375e71cdeb587abb1a6d22c.dir
-      size: 27162
+      md5: 60702877aeda7233985c0181839b4fe6.dir
+      size: 27042
       nfiles: 8
     - path: sql/features/
       hash: md5
@@ -62,15 +96,16 @@ stages:
     outs:
     - path: data/processed/
       hash: md5
-      md5: bd8075a94ac067004b6703b184b5103e.dir
-      size: 1482636
+      md5: 8954b4897da47e87218bd73cce6aee50.dir
+      size: 1482418
       nfiles: 1
   marts:
-    cmd: uv run python -m services.data.marts.main
+    cmd: "docker run --rm --pull=never --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-marts:$IMAGE_TAG\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -80,12 +115,28 @@ stages:
       nfiles: 7
     - path: data/processed/processed.parquet
       hash: md5
-      md5: 31cb4628e48f87b36d8ed4ff965f2744
-      size: 1482636
+      md5: aed509fb345ff65984d7777e72a2603d
+      size: 1482418
+    - path: docker/base/Dockerfile
+      hash: md5
+      md5: 3f40d325ead885e9d032f425119fee9f
+      size: 607
+    - path: docker/base/requirements.txt
+      hash: md5
+      md5: 73b61d3d40156577dbad43732d90569d
+      size: 84
+    - path: docker/marts/Dockerfile
+      hash: md5
+      md5: 08cae347e0deb1544d8e928e6714dcbd
+      size: 359
+    - path: docker/marts/requirements.txt
+      hash: md5
+      md5: cd64ee97966e009daac3f73a7f29ea5a
+      size: 13
     - path: services/data/marts
       hash: md5
-      md5: 9ad1f840225461581fb5cd4c94d2d9ec.dir
-      size: 13668
+      md5: f8b2d0438e5736d009dccbdc3ba671eb.dir
+      size: 13548
       nfiles: 6
     - path: sql/marts/
       hash: md5
@@ -95,6 +146,89 @@ stages:
     outs:
     - path: data/marts/
       hash: md5
-      md5: 784b70f12b068fbe46b5e20d818f86ca.dir
-      size: 1496497
+      md5: c0aed5d277844c97be5c847b68d6331e.dir
+      size: 1496339
       nfiles: 2
+  api:
+    cmd: "docker run --rm --pull=never --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-api:$IMAGE_TAG\n"
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/marts/
+      hash: md5
+      md5: c0aed5d277844c97be5c847b68d6331e.dir
+      size: 1496339
+      nfiles: 2
+    - path: docker/api/Dockerfile
+      hash: md5
+      md5: b28705f5c5dc06c663a2d056ff1e59e2
+      size: 371
+    - path: docker/api/requirements.txt
+      hash: md5
+      md5: 4018864f21020144fec0f5d909658a15
+      size: 61
+    - path: docker/base/Dockerfile
+      hash: md5
+      md5: 3f40d325ead885e9d032f425119fee9f
+      size: 607
+    - path: docker/base/requirements.txt
+      hash: md5
+      md5: 73b61d3d40156577dbad43732d90569d
+      size: 84
+    - path: services/api/
+      hash: md5
+      md5: bb68851a37142f122ea1136c45e7f7b7.dir
+      size: 29636
+      nfiles: 12
+  api_check:
+    cmd: "docker run --rm --pull=never --mount type=bind,src=$(pwd)/data,dst=/app/data,readonly
+      load-forecast-api:$IMAGE_TAG python -c \"import subprocess,time,urllib.request;
+      p=subprocess.Popen(['uvicorn','services.api.main:app','--host','127.0.0.1','--port','8000']);
+      time.sleep(2); r=urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5);
+      print(r.status); p.terminate(); p.wait(timeout=5)\"\n"
+    deps:
+    - path: configs/
+      hash: md5
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
+      size: 49040
+      nfiles: 24
+    - path: core/
+      hash: md5
+      md5: 300d4191e9d66e9e3fbf44feed844fbb.dir
+      size: 33047
+      nfiles: 7
+    - path: data/marts/
+      hash: md5
+      md5: c0aed5d277844c97be5c847b68d6331e.dir
+      size: 1496339
+      nfiles: 2
+    - path: docker/api/Dockerfile
+      hash: md5
+      md5: b28705f5c5dc06c663a2d056ff1e59e2
+      size: 371
+    - path: docker/api/requirements.txt
+      hash: md5
+      md5: 4018864f21020144fec0f5d909658a15
+      size: 61
+    - path: docker/base/Dockerfile
+      hash: md5
+      md5: 3f40d325ead885e9d032f425119fee9f
+      size: 607
+    - path: docker/base/requirements.txt
+      hash: md5
+      md5: 73b61d3d40156577dbad43732d90569d
+      size: 84
+    - path: services/api/
+      hash: md5
+      md5: 99dd63a51e618b3265ccadecc9119434.dir
+      size: 29758
+      nfiles: 12

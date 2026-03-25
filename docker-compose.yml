@@ -1,0 +1,58 @@
+# docker-compose.yml
+
+services:
+  base:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+      args:
+        - APP_UID=${APP_UID:-1000}
+        - APP_GID=${APP_GID:-1000}
+    image:
+      load-forecast-base:${IMAGE_TAG:-latest}
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: docker/ingestion/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:-latest}
+    image:
+      load-forecast-ingestion:${IMAGE_TAG:-latest}
+    depends_on:
+      base:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    
+  preprocessing:
+    build:
+      context: .
+      dockerfile: docker/preprocessing/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:-latest}  
+    image:
+      load-forecast-preprocessing:${IMAGE_TAG:-latest}
+    depends_on:
+      ingestion:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+
+  marts:
+    build:
+      context: .
+      dockerfile: docker/marts/Dockerfile
+      args:
+        - BASE_IMAGE_TAG=${IMAGE_TAG:-latest}
+    image:
+      load-forecast-marts:${IMAGE_TAG:-latest}
+    depends_on:
+      preprocessing:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+  

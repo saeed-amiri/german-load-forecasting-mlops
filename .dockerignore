@@ -1,0 +1,29 @@
+# Version control
+.git/
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Data
+data/
+logs/
+models/
+*.csv
+*.dvc
+
+# DVC cache
+.cache/
+.dvc/cache/
+
+# Docker
+docker/**/*.pyc
+
+# OS files
+.DS_Store

@@ -1,8 +1,15 @@
 stages:
   ingestion:
-    cmd: uv run python -m services.data.ingestion.main
+    cmd: >
+      docker run --rm --pull=never
+      --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-ingestion:$IMAGE_TAG
     deps:
       - data/raw/time_series-2020-10-06.csv
+      - docker/base/Dockerfile
+      - docker/base/requirements.txt
+      - docker/ingestion/Dockerfile
+      - docker/ingestion/requirements.txt
       - services/data/ingestion
       - sql/staging
       - configs/
@@ -11,9 +18,16 @@ stages:
       - data/raw/database.duckdb
 
   preprocessing:
-    cmd: uv run python -m services.data.preprocessing.main
+    cmd: >
+      docker run --rm --pull=never
+      --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-preprocessing:$IMAGE_TAG
     deps:
       - data/raw/database.duckdb
+      - docker/base/Dockerfile
+      - docker/base/requirements.txt
+      - docker/preprocessing/Dockerfile
+      - docker/preprocessing/requirements.txt
       - services/data/preprocessing
       - sql/features/
       - configs/
@@ -22,12 +36,35 @@ stages:
       - data/processed/
 
   marts:
-    cmd: uv run python -m services.data.marts.main
+    cmd: >
+      docker run --rm --pull=never
+      --mount type=bind,src=$(pwd)/data,dst=/app/data
+      load-forecast-marts:$IMAGE_TAG
     deps:
       - data/processed/processed.parquet
+      - docker/base/Dockerfile
+      - docker/base/requirements.txt
+      - docker/marts/Dockerfile
+      - docker/marts/requirements.txt
       - services/data/marts
       - sql/marts/
       - configs/
       - core/
     outs:
       - data/marts/
+
+  api_check:
+    cmd: >
+      docker run --rm --pull=never
+      --mount type=bind,src=$(pwd)/data,dst=/app/data,readonly
+      load-forecast-api:$IMAGE_TAG
+      python -c "import subprocess,time,urllib.request; p=subprocess.Popen(['uvicorn','services.api.main:app','--host','127.0.0.1','--port','8000']); time.sleep(2); r=urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5); print(r.status); p.terminate(); p.wait(timeout=5)"
+    deps:
+      - data/marts/
+      - docker/base/Dockerfile
+      - docker/base/requirements.txt
+      - docker/api/Dockerfile
+      - docker/api/requirements.txt
+      - services/api/
+      - configs/
+      - core/
