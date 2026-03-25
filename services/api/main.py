@@ -58,4 +58,9 @@ templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
 
 @app.get("/")
 def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="index.html", context={})
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}

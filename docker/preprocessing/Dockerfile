@@ -1,15 +1,14 @@
 # docker/preprocessing/Dockerfile
 
-FROM load-forecast-base:latest
+ARG BASE_IMAGE_TAG=latest
+FROM load-forecast-base:${BASE_IMAGE_TAG}
 
 WORKDIR /app
-
-USER root
 
 COPY docker/preprocessing/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY services/data/preprocessing ./services/data/preprocessing
+COPY --chown=appuser:appuser services/data/preprocessing ./services/data/preprocessing
 
 USER appuser
 

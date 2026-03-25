@@ -47,16 +47,17 @@ def show_data_dashboard(request: Request):
         table_html = stats_df.to_html(classes="table table-striped", index=False)
 
         return templates.TemplateResponse(
-            "data.html",
-            {"request": request, "plot_target": plot_target, "plot_feature": plot_feature, "table": table_html},
+            request=request,
+            name="data.html",
+            context={"plot_target": plot_target, "plot_feature": plot_feature, "table": table_html},
         )
 
     except Exception as e:
         logger.error(f"Failed to generate dashboard: {e}")
         return templates.TemplateResponse(
-            "data.html",
-            {
-                "request": request,
+            request=request,
+            name="data.html",
+            context={
                 "plot_target": f"<p class='text-danger'>Error loading plot: {e}</p>",
                 "plot_feature": f"<p class='text-danger'>Error loading plot: {e}</p>",
                 "table": f"<p class='text-danger'>Error loading data: {e}</p>",
