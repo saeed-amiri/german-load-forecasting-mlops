@@ -1,11 +1,12 @@
 schema: '2.0'
 stages:
   ingestion:
-    cmd: uv run python -m services.data.ingestion.main
+    cmd: "docker run --rm -v $(pwd)/services/data/ingestion:/app/services/data/ingestion
+      -v $(pwd)/data:/app/data load-forecast-ingestion\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -19,7 +20,7 @@ stages:
       size: 93778673
     - path: services/data/ingestion
       hash: md5
-      md5: 3f208cac6e2c36ed8e9e60215d2e1224.dir
+      md5: d9deaaa1ab08057e726617422e1e6f7d.dir
       size: 23286
       nfiles: 8
     - path: sql/staging
@@ -30,14 +31,15 @@ stages:
     outs:
     - path: data/raw/database.duckdb
       hash: md5
-      md5: 9e62772e252bd8ea65c4bc07361f23d9
+      md5: ded85a2fb0ef2213b9482e9d45c0b5a4
       size: 30420992
   preprocessing:
-    cmd: uv run python -m services.data.preprocessing.main
+    cmd: "docker run --rm -v $(pwd)/services/data/preprocessing:/app/services/data/preprocessing
+      -v $(pwd)/data:/app/data load-forecast-preprocessing\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -47,12 +49,12 @@ stages:
       nfiles: 7
     - path: data/raw/database.duckdb
       hash: md5
-      md5: 9e62772e252bd8ea65c4bc07361f23d9
+      md5: ded85a2fb0ef2213b9482e9d45c0b5a4
       size: 30420992
     - path: services/data/preprocessing
       hash: md5
-      md5: 1fdfbe1b0375e71cdeb587abb1a6d22c.dir
-      size: 27162
+      md5: 60702877aeda7233985c0181839b4fe6.dir
+      size: 27042
       nfiles: 8
     - path: sql/features/
       hash: md5
@@ -62,15 +64,16 @@ stages:
     outs:
     - path: data/processed/
       hash: md5
-      md5: bd8075a94ac067004b6703b184b5103e.dir
-      size: 1482636
+      md5: 8954b4897da47e87218bd73cce6aee50.dir
+      size: 1482418
       nfiles: 1
   marts:
-    cmd: uv run python -m services.data.marts.main
+    cmd: "docker run --rm -v $(pwd)/services/data/marts:/app/services/data/marts -v
+      $(pwd)/data:/app/data load-forecast-marts\n"
     deps:
     - path: configs/
       hash: md5
-      md5: 64d7983ef95f656e84d82425e02f4efb.dir
+      md5: 44ccde4a8e536d85570cc8577cc0ddf4.dir
       size: 49040
       nfiles: 24
     - path: core/
@@ -80,12 +83,12 @@ stages:
       nfiles: 7
     - path: data/processed/processed.parquet
       hash: md5
-      md5: 31cb4628e48f87b36d8ed4ff965f2744
-      size: 1482636
+      md5: aed509fb345ff65984d7777e72a2603d
+      size: 1482418
     - path: services/data/marts
       hash: md5
-      md5: 9ad1f840225461581fb5cd4c94d2d9ec.dir
-      size: 13668
+      md5: f8b2d0438e5736d009dccbdc3ba671eb.dir
+      size: 13548
       nfiles: 6
     - path: sql/marts/
       hash: md5
@@ -95,6 +98,6 @@ stages:
     outs:
     - path: data/marts/
       hash: md5
-      md5: 784b70f12b068fbe46b5e20d818f86ca.dir
-      size: 1496497
+      md5: c0aed5d277844c97be5c847b68d6331e.dir
+      size: 1496339
       nfiles: 2

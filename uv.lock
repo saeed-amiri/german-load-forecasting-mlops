@@ -899,9 +899,11 @@ name = "german-load-forecasting-mlops"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "docker" },
     { name = "duckdb" },
     { name = "dvc" },
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "mlflow" },
     { name = "numpy" },
     { name = "pandas" },
@@ -922,9 +924,11 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "docker", specifier = ">=7.1.0" },
     { name = "duckdb", specifier = ">=1.5.0" },
     { name = "dvc", specifier = ">=3.66.1" },
     { name = "fastapi", specifier = ">=0.135.1" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "mlflow", specifier = ">=3.10.1" },
     { name = "numpy", specifier = ">=2.4.3" },
     { name = "pandas", specifier = ">=2.3.3" },

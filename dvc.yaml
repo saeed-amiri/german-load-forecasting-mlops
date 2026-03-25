@@ -1,6 +1,9 @@
 stages:
   ingestion:
-    cmd: uv run python -m services.data.ingestion.main
+    cmd: >
+      docker run --rm
+      -v $(pwd)/services/data/ingestion:/app/services/data/ingestion
+      -v $(pwd)/data:/app/data load-forecast-ingestion
     deps:
       - data/raw/time_series-2020-10-06.csv
       - services/data/ingestion
@@ -11,7 +14,10 @@ stages:
       - data/raw/database.duckdb
 
   preprocessing:
-    cmd: uv run python -m services.data.preprocessing.main
+    cmd: >
+      docker run --rm
+      -v $(pwd)/services/data/preprocessing:/app/services/data/preprocessing
+      -v $(pwd)/data:/app/data load-forecast-preprocessing
     deps:
       - data/raw/database.duckdb
       - services/data/preprocessing
@@ -22,7 +28,10 @@ stages:
       - data/processed/
 
   marts:
-    cmd: uv run python -m services.data.marts.main
+    cmd: >
+      docker run --rm
+      -v $(pwd)/services/data/marts:/app/services/data/marts
+      -v $(pwd)/data:/app/data load-forecast-marts
     deps:
       - data/processed/processed.parquet
       - services/data/marts
