@@ -2,6 +2,7 @@
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
@@ -64,3 +65,13 @@ def read_root(request: Request):
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/alert")
+async def receive_alert(request: Request) -> dict[str, Any]:
+    """Receives Alertmanager webhook payloads for local monitoring integration."""
+    payload = await request.json()
+    alerts = payload.get("alerts", []) if isinstance(payload, dict) else []
+
+    logger.info("Received %d alert(s) from Alertmanager.", len(alerts))
+    return {"status": "received", "alerts": len(alerts)}
