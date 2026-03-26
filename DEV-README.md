@@ -312,3 +312,51 @@ In data engineering (especially dbt-style):
     stg_german_load → cleaned base data
 
     fct_german_load_features → model-ready dataset
+
+
+##  25 Mär 2026
+Your direction is very good. You are building in the right order.
+
+Short answer:
+1. Yes, full Mlflow and Airflow can wait until you have at least one real training/inference workflow.
+2. Nginx can be next, but only if you now want reverse proxy behavior (single entrypoint, routing, TLS prep, static caching).
+3. Before adding many new services, do one hardening pass on what you already have.
+
+Recommended next order for your project
+
+1. Harden current pipeline first
+- Keep DVC for finite batch stages only.
+- Keep Docker Compose for long-running services.
+- Add basic endpoint tests for API and pipeline smoke checks.
+- Add a consistent env strategy (.env, secrets, config defaults).
+
+2. Add Prometheus + Grafana before Nginx
+- You already have /health, so next add /metrics.
+- This gives visibility before stack complexity grows.
+- Then every new service (Nginx, Mlflow, Airflow later) becomes easier to debug.
+
+3. Add Nginx
+- Put API behind Nginx.
+- Add reverse proxy rules, timeouts, and simple rate limiting.
+- Later, when deployed outside localhost, add TLS there.
+
+4. Add Mlflow skeleton now, full use later
+- You can initialize Mlflow server now and verify it runs.
+- Real value starts when model training exists: params, metrics, artifacts, model registry.
+- Until then, keep it minimal to avoid noise.
+
+5. Add Airflow after you have at least one real scheduled DAG need
+- Good trigger point: multiple pipelines, retries, backfills, alerts, dependencies.
+- Before that, DVC + Make is usually cleaner for learning and iteration.
+
+Decision rule you can use
+
+- If it is batch and reproducible: DVC stage.
+- If it is always-on service: Compose service.
+- If it is external-facing traffic control: Nginx.
+- If it is experiment tracking/registry: Mlflow.
+- If it is scheduling/orchestration with ops features: Airflow.
+
+So for your case right now:
+Best next step is Prometheus + Grafana instrumentation, then Nginx.  
+Mlflow and Airflow can be scaffolded now, but production-style integration should wait for modeling.

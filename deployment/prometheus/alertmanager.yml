@@ -1,0 +1,12 @@
+# deployment/prometheus/alert,anager.yml
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "default"
+
+receivers:
+  - name: "default"
+    webhook_configs:
+      - url: "http://localhost:5000/alert"

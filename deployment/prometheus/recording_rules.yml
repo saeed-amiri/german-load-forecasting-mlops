@@ -1,0 +1,21 @@
+# deployment/prometheus/recording_rules.yml
+
+groups:
+  - name: system_queries
+    rules:
+
+      - record: node:cpu_usage_percent:1m
+        expr: 100 - (avg by(instance)(rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100)
+
+      - record: node:memory_usage_percent
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100
+
+      - record: node:disk_usage_percent
+        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} 
+                     / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) * 100
+
+      - record: container:cpu_usage_percent:1m
+        expr: rate(container_cpu_usage_seconds_total{image!=""}[1m]) * 100
+
+      - record: container:memory_usage_bytes
+        expr: container_memory_usage_bytes{image!=""}
