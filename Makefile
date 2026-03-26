@@ -1,9 +1,10 @@
-.PHONY: build build-base build-api run-api-docker repro repro-stage api-load lint lint-fix format clean-db prune-docker
+.PHONY: build build-base build-api run-api-docker repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
 
 IMAGE_TAG ?= latest
 APP_UID ?= $(shell id -u)
 APP_GID ?= $(shell id -g)
 API_PORT ?= 8000
+PROMETHEUS_TOOL_IMAGE ?= prom/prometheus:v2.55.1
 
 # ======================
 # Manual runs
@@ -65,3 +66,19 @@ clean-db:
 prune-docker:
 	- docker rmi -f $(docker images -aq)
 	- docker system prune -af --volumes
+
+# ======================
+# Monitoring validation
+# ======================
+
+monitor-validate: monitor-validate-compose monitor-validate-prometheus
+	@echo "Monitoring configuration validation completed"
+
+monitor-validate-compose:
+	@echo "Validating docker-compose.yml"
+	docker compose config > /tmp/compose.rendered.yml
+
+monitor-validate-prometheus:
+	@echo "Validating Prometheus config and rule files"
+	docker run --rm --entrypoint promtool -v "$(CURDIR)/deployment/prometheus:/etc/prometheus" $(PROMETHEUS_TOOL_IMAGE) check config /etc/prometheus/prometheus.yml
+	docker run --rm --entrypoint promtool -v "$(CURDIR)/deployment/prometheus:/etc/prometheus" $(PROMETHEUS_TOOL_IMAGE) check rules /etc/prometheus/alert_rules.yml /etc/prometheus/recording_rules.yml
