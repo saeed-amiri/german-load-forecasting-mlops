@@ -9,4 +9,4 @@ route:
 receivers:
   - name: "default"
     webhook_configs:
-      - url: "http://localhost:5000/alert"
+      - url: "http://api:8000/alert"

@@ -1,4 +1,4 @@
-.PHONY: build build-base build-api run-api-docker repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
+.PHONY: build build-base build-api run-api-docker compose-up compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
 
 IMAGE_TAG ?= latest
 APP_UID ?= $(shell id -u)
@@ -30,6 +30,32 @@ repro-stage: build
 
 run-api-docker: build-api
 	docker run --rm --pull=never -p $(API_PORT):8000 --mount type=bind,src=$(CURDIR)/data,dst=/app/data,readonly load-forecast-api:$(IMAGE_TAG)
+
+compose-up:
+	API_PORT=$(API_PORT) docker compose up -d --build
+
+compose-up-monitoring:
+	API_PORT=$(API_PORT) docker compose up -d --build prometheus alertmanager node-exporter cadvisor api
+
+compose-down:
+	docker compose down --remove-orphans
+
+api-check:
+	@echo "Checking API health on localhost:$(API_PORT)"
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		if curl -fsS http://127.0.0.1:$(API_PORT)/health >/dev/null; then \
+			echo "API health is OK"; \
+			break; \
+		fi; \
+		echo "Waiting for API startup... ($$i/10)"; \
+		sleep 1; \
+		if [ $$i -eq 10 ]; then \
+			echo "API did not become ready on port $(API_PORT)"; \
+			exit 1; \
+		fi; \
+	done
+	@echo "\nChecking API alert webhook (POST)"
+	curl -fsS -X POST http://127.0.0.1:$(API_PORT)/alert -H 'content-type: application/json' -d '{"alerts":[]}'
 
 api-load: clean-db
 	uv run python -m services.data.ingestion.main

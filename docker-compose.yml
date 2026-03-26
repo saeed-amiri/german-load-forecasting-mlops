@@ -69,6 +69,24 @@ services:
   # Core: Data and Modeling
   # ------------------------------------
 
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:-latest}
+    image:
+      load-forecast-api:${IMAGE_TAG:-latest}
+    depends_on:
+      base:
+        condition: service_completed_successfully
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: unless-stopped
+
   base:
     build:
       context: .
