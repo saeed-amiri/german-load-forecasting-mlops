@@ -2,7 +2,7 @@
 
 services:
   # ------------------------------------
-  # Monitoring: Prometheus and Grafana
+  # Monitoring: Prometheus & Grafana
   # ------------------------------------
   # Prometheus: General
   prometheus:
@@ -19,6 +19,8 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=15d"
+      - "--web.external-url=http://localhost:8080/prometheus/"
+      - "--web.route-prefix=/"
     restart: unless-stopped
 
   # Prometheus: System Metrics
@@ -42,8 +44,10 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: load-forecast-cadvisor
-    ports:
-      - "8080:8080"
+    command:
+      - "--url_base_prefix=/cadvisor"
+    # ports:
+    #   - "8080:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -63,11 +67,42 @@ services:
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
       - "--storage.path=/alertmanager"
+      - "--web.external-url=http://localhost:8080/alerts/"
+      - "--web.route-prefix=/"
     restart: unless-stopped
 
   # ------------------------------------
-  # Core: Data and Modeling
+  # NGinX: Reverse Proxy & Load Balancing
   # ------------------------------------
+  
+  nginx:
+    image: nginx:1.27
+    container_name: load-forecast-nginx
+    depends_on:
+      - api
+      - prometheus
+      - cadvisor
+      - alertmanager
+      - node-exporter
+    ports:
+    - "8080:80"
+    volumes:
+      - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+  # ------------------------------------
+  # Core: Data & Modeling
+  # ------------------------------------
+
+  base:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+      args:
+        - APP_UID=${APP_UID:-1000}
+        - APP_GID=${APP_GID:-1000}
+    image:
+      load-forecast-base:${IMAGE_TAG:-latest}
 
   api:
     build:
@@ -86,16 +121,6 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     restart: unless-stopped
-
-  base:
-    build:
-      context: .
-      dockerfile: docker/base/Dockerfile
-      args:
-        - APP_UID=${APP_UID:-1000}
-        - APP_GID=${APP_GID:-1000}
-    image:
-      load-forecast-base:${IMAGE_TAG:-latest}
 
   ingestion:
     build:
