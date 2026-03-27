@@ -13,8 +13,9 @@ services:
       - ./deployment/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - ./deployment/prometheus/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
       - prometheus_data:/prometheus
-    ports:
-      - "9090:9090"
+    # ports:
+    # Exposed through nginx by default. For direct local debugging,
+    # use docker-compose.debug.yml.
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -32,8 +33,9 @@ services:
       - "--path.sysfs=/host/sys"
       - "--path.rootfs=/rootfs"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-    ports:
-      - "9100:9100"
+    # ports:
+    # Exposed through nginx by default. For direct local debugging,
+    # use docker-compose.debug.yml.
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -49,7 +51,8 @@ services:
     command:
       - "--url_base_prefix=/cadvisor"
     # ports:
-    #   - "8080:8080"
+    # Exposed through nginx by default. For direct local debugging,
+    # use docker-compose.debug.yml.
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -61,8 +64,9 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.27.0
     container_name: load-forecast-alertmanager
-    ports:
-      - "9093:9093"
+    # ports:
+    # Exposed through nginx by default. For direct local debugging,
+    # use docker-compose.debug.yml.
     volumes:
       - ./deployment/prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager

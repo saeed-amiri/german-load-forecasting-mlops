@@ -1,4 +1,4 @@
-.PHONY: build build-base build-api run-api-docker compose-up compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
+.PHONY: build build-base build-api run-api-docker compose-up compose-up-debug compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
 
 IMAGE_TAG ?= latest
 APP_UID ?= $(shell id -u)
@@ -35,6 +35,11 @@ compose-up:
 	docker compose build base
 	docker compose build
 	API_PORT=$(API_PORT) docker compose up
+
+compose-up-debug:
+	docker compose -f docker-compose.yml -f docker-compose.debug.yml build base
+	docker compose -f docker-compose.yml -f docker-compose.debug.yml build
+	API_PORT=$(API_PORT) docker compose -f docker-compose.yml -f docker-compose.debug.yml up
 
 compose-up-monitoring:
 	API_PORT=$(API_PORT) docker compose up -d --build prometheus alertmanager node-exporter cadvisor api
