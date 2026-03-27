@@ -32,7 +32,9 @@ run-api-docker: build-api
 	docker run --rm --pull=never -p $(API_PORT):8000 --mount type=bind,src=$(CURDIR)/data,dst=/app/data,readonly load-forecast-api:$(IMAGE_TAG)
 
 compose-up:
-	API_PORT=$(API_PORT) docker compose up -d --build
+	docker compose build base
+	docker compose build
+	API_PORT=$(API_PORT) docker compose up
 
 compose-up-monitoring:
 	API_PORT=$(API_PORT) docker compose up -d --build prometheus alertmanager node-exporter cadvisor api
