@@ -44,6 +44,8 @@ services:
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     container_name: load-forecast-cadvisor
+    environment:
+      - CADVISOR_HEALTHCHECK_URL=http://localhost:8080/cadvisor/healthz
     command:
       - "--url_base_prefix=/cadvisor"
     # ports:
