@@ -71,6 +71,26 @@ services:
       - "--web.route-prefix=/"
     restart: unless-stopped
 
+  # Grafana
+  grafana:
+    image: grafana/grafana:12.3.0
+    container_name: load-forecast-grafana
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SERVER_ROOT_URL=http://localhost:8080/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_METRICS_ENABLED=true
+      - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./deployment/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./deployment/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    restart: unless-stopped
+
+
   # ------------------------------------
   # NGinX: Reverse Proxy & Load Balancing
   # ------------------------------------
@@ -84,6 +104,7 @@ services:
       - cadvisor
       - alertmanager
       - node-exporter
+      - grafana
     ports:
     - "8080:80"
     volumes:
@@ -170,4 +191,5 @@ services:
 volumes:
   prometheus_data:
   alertmanager_data:
+  grafana-storage:
   
