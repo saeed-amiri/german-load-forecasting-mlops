@@ -21,6 +21,16 @@ scrape_configs:
     static_configs:
       - targets: ["cadvisor:8080"]
 
+  # Alertmanager metrics
+  - job_name: "alertmanager"
+    static_configs:
+      - targets: ["alertmanager:9093"]
+
+  # Grafana metrics
+  - job_name: "grafana"
+    static_configs:
+      - targets: ["grafana:3000"]
+
 # Alerts
 alerting:
   alertmanagers:
