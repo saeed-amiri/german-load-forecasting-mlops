@@ -2,6 +2,10 @@
 # Optional local debug overrides: publish selected monitoring ports on localhost only.
 
 services:
+  api:
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+
   prometheus:
     ports:
       - "127.0.0.1:9090:9090"

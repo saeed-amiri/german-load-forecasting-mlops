@@ -1,51 +1,60 @@
-.PHONY: build build-base build-api run-api-docker compose-up compose-up-debug compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus
+.PHONY: build build-base build-api run-api-docker compose-up compose-up-debug compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus check-image-tag
 
-IMAGE_TAG ?= latest
+ifneq (,$(wildcard .env))
+  include .env
+  export
+endif
+
+IMAGE_TAG ?=
 APP_UID ?= $(shell id -u)
 APP_GID ?= $(shell id -g)
 API_PORT ?= 8000
 PROMETHEUS_TOOL_IMAGE ?= prom/prometheus:v2.55.1
+COMPOSE := docker compose
+
+check-image-tag:
+	@test -n "$(IMAGE_TAG)" || (echo "IMAGE_TAG is required. Set it in .env (recommended) or pass IMAGE_TAG=<tag>." && exit 1)
 
 # ======================
 # Manual runs
 # ======================
-build: build-base
+build: check-image-tag build-base
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-ingestion:$(IMAGE_TAG) -f docker/ingestion/Dockerfile .
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-preprocessing:$(IMAGE_TAG) -f docker/preprocessing/Dockerfile .
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-marts:$(IMAGE_TAG) -f docker/marts/Dockerfile .
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-api:$(IMAGE_TAG) -f docker/api/Dockerfile .
 
-build-api: build-base
+build-api: check-image-tag build-base
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-api:$(IMAGE_TAG) -f docker/api/Dockerfile .
 
-build-base:
+build-base: check-image-tag
 	docker build --build-arg APP_UID=$(APP_UID) --build-arg APP_GID=$(APP_GID) -t load-forecast-base:$(IMAGE_TAG) -f docker/base/Dockerfile .
 
-repro: build
+repro: check-image-tag build
 	IMAGE_TAG=$(IMAGE_TAG) dvc repro
 
-repro-stage: build
+repro-stage: check-image-tag build
 	@test -n "$(STAGE)" || (echo "Usage: make repro-stage STAGE=<stage-name> [IMAGE_TAG=<tag>]" && exit 1)
 	IMAGE_TAG=$(IMAGE_TAG) dvc repro $(STAGE)
 
-run-api-docker: build-api
+run-api-docker: check-image-tag build-api
 	docker run --rm --pull=never -p $(API_PORT):8000 --mount type=bind,src=$(CURDIR)/data,dst=/app/data,readonly load-forecast-api:$(IMAGE_TAG)
 
-compose-up:
-	docker compose build base
-	docker compose build
-	API_PORT=$(API_PORT) docker compose up
+compose-up: check-image-tag
+	$(COMPOSE) build base
+	$(COMPOSE) build
+	API_PORT=$(API_PORT) $(COMPOSE) up
 
-compose-up-debug:
-	docker compose -f docker-compose.yml -f docker-compose.debug.yml build base
-	docker compose -f docker-compose.yml -f docker-compose.debug.yml build
-	API_PORT=$(API_PORT) docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+compose-up-debug: check-image-tag
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml build base
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml build
+	API_PORT=$(API_PORT) $(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml up
 
-compose-up-monitoring:
-	API_PORT=$(API_PORT) docker compose up -d --build prometheus alertmanager node-exporter cadvisor api
+compose-up-monitoring: check-image-tag
+	API_PORT=$(API_PORT) $(COMPOSE) up -d --build prometheus alertmanager node-exporter cadvisor api
 
 compose-down:
-	docker compose down --remove-orphans
+	$(COMPOSE) down --remove-orphans
 
 api-check:
 	@echo "Checking API health on localhost:$(API_PORT)"
@@ -109,7 +118,7 @@ monitor-validate: monitor-validate-compose monitor-validate-prometheus
 
 monitor-validate-compose:
 	@echo "Validating docker-compose.yml"
-	docker compose config > /tmp/compose.rendered.yml
+	$(COMPOSE) config > /tmp/compose.rendered.yml
 
 monitor-validate-prometheus:
 	@echo "Validating Prometheus config and rule files"
