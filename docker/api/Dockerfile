@@ -1,6 +1,6 @@
 # docker/api/Dockerfile
 
-ARG BASE_IMAGE_TAG=latest
+ARG BASE_IMAGE_TAG=unset
 FROM load-forecast-base:${BASE_IMAGE_TAG}
 
 WORKDIR /app
