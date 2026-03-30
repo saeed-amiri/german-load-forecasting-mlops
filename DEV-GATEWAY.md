@@ -35,7 +35,7 @@
 
 ##
 ´´´text
-  User
+  User  
    │  
    │ 1. POST /login (username, password)  
    ▼  
