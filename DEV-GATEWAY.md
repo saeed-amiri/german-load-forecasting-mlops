@@ -7,28 +7,28 @@
                                  │
                                  ▼
                      ┌──────────────────────┐
-                     │      API Gateway      │
-                     │  - Verify JWT         │
-                     │  - Enforce roles      │
-                     │  - Route requests     │
+                     │      API Gateway     │
+                     │  - Verify JWT        │
+                     │  - Enforce roles     │
+                     │  - Route requests    │
                      └──────────┬───────────┘
                                 │
         ┌───────────────────────┼────────────────────────┐
         │                       │                        │
         ▼                       ▼                        ▼
-┌──────────────────┐   ┌──────────────────┐    ┌──────────────────┐
-│   Auth Service    │   │   Backend A      │    │   Backend B      │
-│ - Login           │   │ - Business logic │    │ - Business logic │
-│ - Password check  │   │ - No auth logic  │    │ - No auth logic  │
-│ - JWT creation    │   │ - Trust gateway  │    │ - Trust gateway  │
-└─────────┬─────────┘   └──────────────────┘    └──────────────────┘
-          │
-          ▼
- ┌──────────────────┐
- │   User Database   │
- │ - Users           │
- │ - Password hashes │
- │ - Roles           │
- │ - Permissions     │
- └──────────────────┘
+    ┌───────────────────┐   ┌──────────────────┐    ┌──────────────────┐
+    │   Auth Service    │   │   Backend A      │    │   Backend B      │
+    │ - Login           │   │ - Business logic │    │ - Business logic │
+    │ - Password check  │   │ - No auth logic  │    │ - No auth logic  │
+    │ - JWT creation    │   │ - Trust gateway  │    │ - Trust gateway  │
+    └─────────┬─────────┘   └──────────────────┘    └──────────────────┘
+              │
+              ▼
+     ┌──────────────────┐
+     │   User Database   │
+     │ - Users           │
+     │ - Password hashes │
+     │ - Roles           │
+     │ - Permissions     │
+     └──────────────────┘
 ´´´
