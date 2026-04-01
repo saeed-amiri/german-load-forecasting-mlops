@@ -1,4 +1,4 @@
-.PHONY: build build-base build-api run-api-docker compose-up compose-up-debug compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus check-image-tag
+.PHONY: build build-base build-api build-auth run-api-docker compose-up compose-up-debug compose-up-monitoring compose-down api-check repro repro-stage api-load lint lint-fix format clean-db prune-docker monitor-validate monitor-validate-compose monitor-validate-prometheus check-image-tag
 
 ifneq (,$(wildcard .env))
   include .env
@@ -23,9 +23,13 @@ build: check-image-tag build-base
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-preprocessing:$(IMAGE_TAG) -f docker/preprocessing/Dockerfile .
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-marts:$(IMAGE_TAG) -f docker/marts/Dockerfile .
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-api:$(IMAGE_TAG) -f docker/api/Dockerfile .
+	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-auth:$(IMAGE_TAG) -f docker/auth/Dockerfile .
 
 build-api: check-image-tag build-base
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-api:$(IMAGE_TAG) -f docker/api/Dockerfile .
+
+build-auth: check-image-tag build-base
+	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) -t load-forecast-auth:$(IMAGE_TAG) -f docker/auth/Dockerfile .
 
 build-base: check-image-tag
 	docker build --build-arg APP_UID=$(APP_UID) --build-arg APP_GID=$(APP_GID) -t load-forecast-base:$(IMAGE_TAG) -f docker/base/Dockerfile .

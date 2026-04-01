@@ -64,3 +64,222 @@ Automatic retraining
 
 </details>
 ```
+
+# Access Links And Curl Cheat Sheet
+
+This section is a quick reference for checking all running services.
+
+## Through Nginx (single entrypoint)
+
+Base URL:
+- http://localhost:8080
+
+Links:
+- API home: http://localhost:8080/api/
+- API health: http://localhost:8080/api/health
+- API alert webhook: http://localhost:8080/api/alert
+- Auth login: http://localhost:8080/auth/login
+- Auth register: http://localhost:8080/auth/register
+- Auth protected: http://localhost:8080/auth/protected
+- Auth admin-only: http://localhost:8080/auth/admin-only
+- Auth user-only: http://localhost:8080/auth/user-only
+- Prometheus: http://localhost:8080/prometheus/
+- Alertmanager: http://localhost:8080/alerts/
+- Grafana: http://localhost:8080/grafana/
+- Node Exporter metrics: http://localhost:8080/node/metrics
+- cAdvisor: http://localhost:8080/cadvisor/
+
+## Standalone / Direct Ports (without nginx)
+
+When using debug overrides (docker-compose.debug.yml):
+- API: http://127.0.0.1:8000
+- Auth: http://127.0.0.1:8002
+- Prometheus: http://127.0.0.1:9090
+- Alertmanager: http://127.0.0.1:9093
+- Node Exporter: http://127.0.0.1:9100/metrics
+- cAdvisor: http://127.0.0.1:8081/cadvisor/
+
+## Curl Commands (Nginx)
+
+```bash
+# API health
+curl -fsS http://localhost:8080/api/health
+
+# API alert webhook
+curl -fsS -X POST http://localhost:8080/api/alert \
+     -H 'Content-Type: application/json' \
+     -d '{"alerts":[]}'
+
+# Register user
+curl -fsS -X POST http://localhost:8080/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"demo","password":"demo123","role":"user"}'
+
+# Login
+curl -fsS -X POST http://localhost:8080/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"demo","password":"demo123"}'
+
+# Optional: extract token with jq
+TOKEN=$(curl -fsS -X POST http://localhost:8080/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"demo","password":"demo123"}' | jq -r '.access_token')
+
+# Protected endpoint
+curl -fsS http://localhost:8080/auth/protected \
+     -H "Authorization: Bearer $TOKEN"
+
+# RBAC checks
+curl -i http://localhost:8080/auth/admin-only \
+     -H "Authorization: Bearer $TOKEN"
+curl -i http://localhost:8080/auth/user-only \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+## Curl Commands (Direct Auth Port)
+
+```bash
+# Register user directly against auth service
+curl -fsS -X POST http://127.0.0.1:8002/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"direct","password":"direct123","role":"user"}'
+
+# Login directly
+curl -fsS -X POST http://127.0.0.1:8002/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"direct","password":"direct123"}'
+```
+
+## Useful Startup Commands
+
+```bash
+# Full stack behind nginx
+docker compose up
+
+# With direct debug ports exposed
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+```
+
+# How To Use Auth Step By Step
+
+This is the practical flow to use auth without confusion.
+
+## Step 1: Start the stack
+
+```bash
+docker compose up
+```
+
+If you only want direct ports for testing:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+```
+
+## Step 2: Register a user (create account)
+
+Use register once per username.
+
+```bash
+curl -sS -X POST http://localhost:8080/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"alice","password":"alice123","role":"user"}'
+```
+
+Expected result:
+- You get `access_token` in response.
+- You also get `username`, `role`, and `token_type`.
+
+Important:
+- You cannot get the raw password back later.
+- Passwords are stored as hashes for security.
+
+## Step 3: Login with username and password
+
+Login is how you get a fresh token any time.
+
+```bash
+curl -sS -X POST http://localhost:8080/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"alice","password":"alice123"}'
+```
+
+Expected result:
+- Response includes `access_token`.
+
+If password is wrong:
+- You get `401 Invalid username or password`.
+
+## Step 4: Save token to shell variable
+
+```bash
+TOKEN=$(curl -sS -X POST http://localhost:8080/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"alice","password":"alice123"}' | jq -r '.access_token')
+
+echo "$TOKEN"
+```
+
+If `jq` is not installed, copy token manually from login response.
+
+## Step 5: Call protected endpoint with Bearer token
+
+```bash
+curl -sS http://localhost:8080/auth/protected \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Expected result:
+- Access granted and token payload in response.
+
+If token missing or invalid:
+- You get `401 Invalid or expired token`.
+
+## Step 6: Test role-based routes (RBAC)
+
+User token:
+
+```bash
+curl -i http://localhost:8080/auth/user-only \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Admin route with same user token:
+
+```bash
+curl -i http://localhost:8080/auth/admin-only \
+     -H "Authorization: Bearer $TOKEN"
+```
+
+Expected result:
+- `user-only` succeeds for role `user`.
+- `admin-only` returns `403 Insufficient permissions` for role `user`.
+
+## Step 7: Common mistakes and fixes
+
+1. `401` on protected route:
+- Check you sent header exactly as `Authorization: Bearer <token>`.
+
+2. `401` right after login:
+- Ensure auth secret config is stable and services were restarted cleanly.
+
+3. `400 User already exists` on register:
+- Choose a new username, or login with existing credentials.
+
+4. `403` on admin route:
+- Use a token created for a user with role `admin`.
+
+## One-command quick demo
+
+```bash
+curl -sS -X POST http://localhost:8080/auth/register \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"demo-user","password":"demo123","role":"user"}' >/dev/null
+
+TOKEN=$(curl -sS -X POST http://localhost:8080/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"username":"demo-user","password":"demo123"}' | jq -r '.access_token')
+
+curl -sS http://localhost:8080/auth/protected \
+     -H "Authorization: Bearer $TOKEN"
+```
