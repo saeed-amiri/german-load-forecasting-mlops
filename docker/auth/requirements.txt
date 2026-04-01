@@ -1,0 +1,3 @@
+# Auth service extra dependencies (kept explicit for service-level control)
+python-jose>=3.5.0
+argon2-cffi>=23.1.0
