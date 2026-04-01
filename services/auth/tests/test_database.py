@@ -1,8 +1,6 @@
 # services/auth/tests/test_database.py
 
-from pathlib import Path
-
-import pytest
+from uuid import uuid4
 
 from services.auth.app.database import (
     create_user,
@@ -12,36 +10,26 @@ from services.auth.app.database import (
 )
 from services.auth.app.hashing import hash_password
 
-TEST_DB = Path("test_auth.duckdb")
-
-
-@pytest.fixture(autouse=True)
-def setup_test_db(monkeypatch):
-    # Override DB path for tests
-    monkeypatch.setattr("services.auth.app.database.DB_PATH", TEST_DB, raising=False)
-
-    # Initialize test DB
-    init_db()
-    yield
-
-    # Cleanup
-    if TEST_DB.exists():
-        TEST_DB.unlink()
-
 
 def test_create_and_get_user():
+    init_db()
+    username = f"alice-{uuid4().hex[:8]}"
     pw_hash = hash_password("mypassword")
-    create_user("alice", pw_hash, "admin")
+    created = create_user(username, pw_hash, "admin")
 
-    fetched = get_user("alice")
+    assert created is not None
+    assert created.username == username
+
+    fetched = get_user(username)
 
     assert fetched is not None
-    assert fetched.username == "alice"
+    assert fetched.username == username
     assert fetched.role == "admin"
     assert fetched.password_hashed == pw_hash
 
 
 def test_get_missing_user():
+    init_db()
     assert get_user("does_not_exist") is None
 
 

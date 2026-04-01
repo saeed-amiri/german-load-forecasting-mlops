@@ -16,7 +16,7 @@ def test_verify_password_success():
     assert verify_password(pw, hashed) is True
 
 
-def test_varify_password_failure():
+def test_verify_password_failure():
     pw = "mypassword"
     hashed = hash_password(pw)
     assert verify_password("wrong", hashed) is False

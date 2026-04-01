@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from ..app.database import create_user, user_exists
+from ..app.database import create_user
 from ..app.hashing import hash_password
 from ..app.jwt_utils import create_access_token
 
@@ -18,14 +18,11 @@ class RegisterRequest(BaseModel):
 
 @router.post("/register")
 def register(data: RegisterRequest):
-    if user_exists(data.username):
-        raise HTTPException(status_code=400, detail="User already exists")
-
     hashed = hash_password(data.password)
     user = create_user(data.username, hashed, data.role)
 
     if not user:
-        raise HTTPException(status_code=500, detail="Failed to create user")
+        raise HTTPException(status_code=400, detail="User already exists")
 
     token = create_access_token({"sub": user.username, "role": user.role})
     return {

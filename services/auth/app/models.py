@@ -1,5 +1,5 @@
 # services/auth/app/models.py
-# Defines the User model (username, password_hashed, role, etc.)
+"""Pydantic models used by the auth service."""
 
 from pydantic import BaseModel
 

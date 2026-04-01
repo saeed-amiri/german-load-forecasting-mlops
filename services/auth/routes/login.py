@@ -1,5 +1,4 @@
-# services/auth/routers/loging.py
-"""Implements the /auth/login endpoint: validates credentials and returns a JWT."""
+"""Implements the /auth/login endpoint and returns a bearer token."""
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -30,7 +29,7 @@ def login(data: LoginRequest):
 
     return {
         "access_token": token,
-        "token": "bearer",
+        "token_type": "bearer",
         "username": user.username,
         "role": user.role,
     }

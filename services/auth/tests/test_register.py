@@ -1,5 +1,7 @@
 # services/auth/tests/test_register.py
 
+from uuid import uuid4
+
 from fastapi.testclient import TestClient
 
 from services.auth.app.database import init_db
@@ -13,12 +15,16 @@ def setup_module(module):
 
 
 def test_register_success():
-    response = client.post("/auth/register", json={"username": "newuser", "password": "mypassword", "role": "admin"})
+    username = f"newuser-{uuid4().hex[:8]}"
+    response = client.post(
+        "/auth/register",
+        json={"username": username, "password": "mypassword", "role": "admin"},
+    )
 
     assert response.status_code == 200
     data = response.json()
 
-    assert data["username"] == "newuser"
+    assert data["username"] == username
     assert data["role"] == "admin"
     assert "access_token" in data
 

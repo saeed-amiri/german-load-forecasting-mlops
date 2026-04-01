@@ -8,5 +8,5 @@ router = APIRouter()
 
 
 @router.get("/protected")
-def protected_route(user=Depends(get_current_user)):
+def protected_route(user: dict = Depends(get_current_user)):
     return {"message": "Access granted", "user": user}

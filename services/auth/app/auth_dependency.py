@@ -1,5 +1,4 @@
 # services/auth/app/auth_dependency.py
-
 """protecting routes with JWTs"""
 
 from fastapi import Depends, HTTPException
@@ -10,7 +9,7 @@ from .jwt_utils import decode_access_token
 security = HTTPBearer()
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     token = credentials.credentials
     payload = decode_access_token(token)
 

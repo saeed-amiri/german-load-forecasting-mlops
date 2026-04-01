@@ -1,42 +1,39 @@
 # services/auth/app/database.py
-"""Initializes the database connection and exposes helper functions to query users."""
-
-from pathlib import Path
+"""Initializes the auth database and provides user query helpers."""
 
 import duckdb
 
-from .hashing import hash_password
+from services.auth.context import AuthContext, get_auth_context
+
 from .models import User
 
-DB_PATH = Path("auth.duckhub")
+
+def get_connection(ctx: AuthContext | None = None) -> duckdb.DuckDBPyConnection:
+    active_ctx = ctx or get_auth_context()
+    return duckdb.connect(str(active_ctx.database_path))
 
 
-def get_connection() -> duckdb.DuckDBPyConnection:
-    return duckdb.connect(str(DB_PATH))
+def init_db(ctx: AuthContext | None = None) -> None:
+    active_ctx = ctx or get_auth_context()
+    sql = active_ctx.init_sql_path.read_text(encoding="utf-8")
 
-
-def init_db():
-    conn: duckdb.DuckDBPyConnection = get_connection()
-    # Create a sequence to handle auto-incrementing
-    conn.execute("CREATE SEQUENCE IF NOT EXISTS user_id_seq START 1")
-    # Create the table
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER DEFAULT KEY DEFAULT nextval('user_id_seq'),
-            username VARCHAR NOT NULL,
-            password_hashed VARCHAR NOT NULL,
-            role VARCHAR DEFAULT 'user'
-        );
-    """)
+    conn = get_connection(active_ctx)
+    conn.execute(sql)
     conn.close()
 
 
-def create_user(username: str, password_hashed: str, role: str = "user") -> User | None:
-    if user_exists(username):
-        print(f"User '{username}' already exists.")
+def create_user(
+    username: str,
+    password_hashed: str,
+    role: str = "user",
+    ctx: AuthContext | None = None,
+) -> User | None:
+    active_ctx = ctx or get_auth_context()
+
+    if user_exists(username, active_ctx):
         return None
 
-    conn: duckdb.DuckDBPyConnection = get_connection()
+    conn = get_connection(active_ctx)
     result = conn.execute(
         """
         INSERT INTO users (username, password_hashed, role)
@@ -53,8 +50,9 @@ def create_user(username: str, password_hashed: str, role: str = "user") -> User
     return User(id=result[0], username=result[1], password_hashed=result[2], role=result[3])
 
 
-def get_user(username: str) -> User | None:
-    conn: duckdb.DuckDBPyConnection = get_connection()
+def get_user(username: str, ctx: AuthContext | None = None) -> User | None:
+    active_ctx = ctx or get_auth_context()
+    conn = get_connection(active_ctx)
     row = conn.execute(
         "SELECT id, username, password_hashed, role FROM users WHERE username = ?", [username]
     ).fetchone()
@@ -66,15 +64,17 @@ def get_user(username: str) -> User | None:
     return User(id=row[0], username=row[1], password_hashed=row[2], role=row[3])
 
 
-def user_exists(username: str) -> bool:
-    conn = get_connection()
+def user_exists(username: str, ctx: AuthContext | None = None) -> bool:
+    active_ctx = ctx or get_auth_context()
+    conn = get_connection(active_ctx)
     row = conn.execute("SELECT 1 FROM users WHERE username = ? LIMIT 1;", [username]).fetchone()
     conn.close()
     return row is not None
 
 
-def _print_users_table():
-    conn = get_connection()
+def _print_users_table(ctx: AuthContext | None = None) -> None:
+    active_ctx = ctx or get_auth_context()
+    conn = get_connection(active_ctx)
     rows = conn.execute("SELECT id, username, password_hashed, role FROM users").fetchall()
     conn.close()
 
@@ -89,8 +89,10 @@ def _print_users_table():
 
 
 if __name__ == "__main__":
-    init_db()
-    create_user("alice", hash_password("mypassword"), "admin")
-    create_user("bob", hash_password("secret"), "user")
+    from .hashing import hash_password
 
-    _print_users_table()
+    auth_ctx = get_auth_context()
+    init_db(auth_ctx)
+    create_user("alice", hash_password("mypassword"), "admin", auth_ctx)
+    create_user("bob", hash_password("secret"), "user", auth_ctx)
+    _print_users_table(auth_ctx)
