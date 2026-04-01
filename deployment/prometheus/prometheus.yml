@@ -18,6 +18,7 @@ scrape_configs:
 
   # Docker container metrics
   - job_name: "cadvisor"
+    metrics_path: /cadvisor/metrics
     static_configs:
       - targets: ["cadvisor:8080"]
 
@@ -28,6 +29,7 @@ scrape_configs:
 
   # Grafana metrics
   - job_name: "grafana"
+    metrics_path: /grafana/metrics
     static_configs:
       - targets: ["grafana:3000"]
 
