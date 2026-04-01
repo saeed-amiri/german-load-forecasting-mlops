@@ -11,6 +11,9 @@ INIT_SQL = Path("sql/auth/user.sql")
 
 @pytest.fixture(autouse=True)
 def isolated_auth_context(monkeypatch):
+    # Keep DB/user seeding inside pytest fixtures or test bodies.
+    # Avoid setup_module/setup_class seeding because those run outside
+    # this autouse fixture lifecycle and bypass monkeypatched auth context.
     ctx = AuthContext(
         database_path=TEST_DB,
         init_sql_path=INIT_SQL,
