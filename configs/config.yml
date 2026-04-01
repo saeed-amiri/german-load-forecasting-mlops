@@ -10,3 +10,6 @@ logging: {{ logging }}
 
 # API settings
 api: {{ api }}
+
+# Auth settings
+auth: {{ auth }}

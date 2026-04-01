@@ -1,0 +1,5 @@
+database: "auth.duckhub"
+init_sql: "sql/auth/user.sql"
+jwt_secret_key: "change-me-in-production"
+jwt_algorithm: "HS256"
+access_token_expire_minutes: 30
