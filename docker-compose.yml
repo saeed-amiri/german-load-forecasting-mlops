@@ -148,6 +148,133 @@ services:
     restart: unless-stopped
 
   # ------------------------------------
+  # Orchestration: Airflow
+  # ------------------------------------
+
+  # Airflow metadata database
+  airflow-postgres:
+    image: postgres:15
+    container_name: load-forecast-airflow-postgres
+    environment:
+      - POSTGRES_USER=${AIRFLOW_DB_USER:-airflow}
+      - POSTGRES_PASSWORD=${AIRFLOW_DB_PASSWORD:-airflow}
+      - POSTGRES_DB=${AIRFLOW_DB_NAME:-airflow}
+    volumes:
+      - airflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${AIRFLOW_DB_USER:-airflow} -d ${AIRFLOW_DB_NAME:-airflow}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # One-time DB migrations and admin user setup
+  airflow-init:
+    image: apache/airflow:2.9.3
+    container_name: load-forecast-airflow-init
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    user: "0:0"
+    environment:
+      - AIRFLOW_UID=${AIRFLOW_UID:-50000}
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        airflow db migrate
+        airflow users delete --username "${AIRFLOW_ADMIN_USERNAME:-admin}" || true
+        airflow users create --role "${AIRFLOW_ADMIN_ROLE:-Admin}" --username "${AIRFLOW_ADMIN_USERNAME:-admin}" --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" --firstname "${AIRFLOW_ADMIN_FIRSTNAME:-Admin}" --lastname "${AIRFLOW_ADMIN_LASTNAME:-User}" --email "${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
+        chown -R ${AIRFLOW_UID:-50000}:0 /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
+    networks:
+      - backend
+
+  # Airflow web UI
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    container_name: load-forecast-airflow-webserver
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
+      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080/airflow
+      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8080/airflow/health', timeout=3)",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    command: webserver
+    networks:
+      - backend
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    container_name: load-forecast-airflow-scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    user: "${AIRFLOW_UID:-50000}:0"
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "airflow jobs check --job-type SchedulerJob --hostname $$HOSTNAME",
+        ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    command: scheduler
+    networks:
+      - backend
+    restart: unless-stopped
+
+
+  # ------------------------------------
   # Core: Data & Modeling
   # ------------------------------------
 
@@ -269,4 +396,5 @@ volumes:
   prometheus_data:
   alertmanager_data:
   grafana-storage:
+  airflow_pgdata:
   

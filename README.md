@@ -83,6 +83,7 @@ Links:
 - Auth protected: http://localhost:8080/auth/protected
 - Auth admin-only: http://localhost:8080/auth/admin-only
 - Auth user-only: http://localhost:8080/auth/user-only
+- Airflow UI: http://localhost:8080/airflow/
 - Prometheus: http://localhost:8080/prometheus/
 - Alertmanager: http://localhost:8080/alerts/
 - Grafana: http://localhost:8080/grafana/
@@ -94,6 +95,7 @@ Links:
 When using debug overrides (docker-compose.debug.yml):
 - API: http://127.0.0.1:8000
 - Auth: http://127.0.0.1:8002
+- Airflow UI: http://127.0.0.1:8082
 - Prometheus: http://127.0.0.1:9090
 - Alertmanager: http://127.0.0.1:9093
 - Node Exporter: http://127.0.0.1:9100/metrics
@@ -134,6 +136,9 @@ curl -i http://localhost:8080/auth/admin-only \
      -H "Authorization: Bearer $TOKEN"
 curl -i http://localhost:8080/auth/user-only \
      -H "Authorization: Bearer $TOKEN"
+
+# Airflow web UI availability
+curl -I http://localhost:8080/airflow/
 ```
 
 ## Curl Commands (Direct Auth Port)
@@ -148,6 +153,9 @@ curl -fsS -X POST http://127.0.0.1:8002/auth/register \
 curl -fsS -X POST http://127.0.0.1:8002/auth/login \
      -H 'Content-Type: application/json' \
      -d '{"username":"direct","password":"direct123"}'
+
+# Airflow UI directly (debug profile)
+curl -I http://127.0.0.1:8082
 ```
 
 ## Useful Startup Commands
@@ -159,6 +167,58 @@ docker compose up
 # With direct debug ports exposed
 docker compose -f docker-compose.yml -f docker-compose.debug.yml up
 ```
+
+## Airflow Admin Credentials Recovery
+
+If Airflow is reachable but login fails, reset the admin user from values in .env.
+
+Required .env keys:
+- AIRFLOW_ADMIN_USERNAME
+- AIRFLOW_ADMIN_PASSWORD
+- AIRFLOW_ADMIN_EMAIL
+- AIRFLOW_ADMIN_FIRSTNAME
+- AIRFLOW_ADMIN_LASTNAME
+- AIRFLOW_ADMIN_ROLE
+
+Reset/recreate the admin user:
+
+```bash
+make airflow-reset-admin
+```
+
+Expected result:
+- Admin user is recreated with the configured username and password.
+- You can sign in at http://localhost:8080/airflow/login/
+
+If your browser still rejects login after reset:
+1. Open an incognito/private window.
+2. Retry with your .env credentials.
+
+Rotate credentials safely:
+1. Update AIRFLOW_ADMIN_PASSWORD (and optional username/email fields) in .env.
+2. Run `make airflow-reset-admin`.
+3. Sign in again with the new credentials.
+
+Validate key Prometheus targets after startup:
+
+```bash
+make prometheus-targets-check
+```
+
+This check verifies the critical targets fixed in this stack:
+- cadvisor
+- grafana
+
+Prometheus Targets tab note:
+- Endpoint values shown there (for example `http://alertmanager:9093/metrics`) are internal Docker-network scrape URLs used by Prometheus.
+- They are not nginx redirect URLs and are not intended to be host-browser-friendly.
+- `up` in the Targets table means scraping is working correctly.
+
+Browser-friendly metrics URLs (via nginx):
+- http://localhost:8080/alerts/metrics
+- http://localhost:8080/cadvisor/metrics
+- http://localhost:8080/grafana/metrics
+- http://localhost:8080/node/metrics
 
 # How To Use Auth Step By Step
 
