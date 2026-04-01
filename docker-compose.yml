@@ -187,6 +187,30 @@ services:
       - backend
     restart: unless-stopped
 
+  auth:
+    build:
+      context: .
+      dockerfile: docker/auth/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
+    image:
+      load-forecast-auth:${IMAGE_TAG:?IMAGE_TAG is required}
+    depends_on:
+      base:
+        condition: service_completed_successfully
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    networks:
+      - backend
+    restart: unless-stopped
+
   ingestion:
     build:
       context: .

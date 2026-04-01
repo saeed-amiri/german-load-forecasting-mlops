@@ -10,6 +10,7 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .config_api import APIConfig
+from .config_auth import AuthConfig
 from .config_logs import LoggingConfig
 from .config_paths import PathSettings
 from .config_runtime import RuntimePaths
@@ -32,6 +33,7 @@ class PipelineConfig(BaseModel):
     sql: SQLConfig
     logging: LoggingConfig
     api: APIConfig
+    auth: AuthConfig
     runtime: Optional[RuntimePaths] = Field(default=None)
 
     @staticmethod
@@ -51,6 +53,14 @@ class PipelineConfig(BaseModel):
         resolved_api = self.api.model_copy(
             update={
                 "templates": self._to_abs(self.project_root, self.api.templates),
+                "static": self._to_abs(self.project_root, self.api.static),
+            }
+        )
+
+        resolved_auth = self.auth.model_copy(
+            update={
+                "database": self._to_abs(self.project_root, self.auth.database),
+                "init_sql": self._to_abs(self.project_root, self.auth.init_sql),
             }
         )
 
@@ -65,6 +75,7 @@ class PipelineConfig(BaseModel):
             update={
                 "paths": resolved_paths,
                 "api": resolved_api,
+                "auth": resolved_auth,
                 "runtime": runtime,
             }
         )

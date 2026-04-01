@@ -6,6 +6,8 @@ models/
 !**/.gitkeep
 inspect_data.py
 playground.sql
+backend.py
+gateway.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -216,3 +218,4 @@ marimo/_lsp/
 __marimo__/
 .vscode
 MyElectricityDB.session.sql
+test_auth.duckdb
