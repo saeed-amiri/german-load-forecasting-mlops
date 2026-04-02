@@ -40,6 +40,9 @@ services:
       - "--path.procfs=/host/proc"
       - "--path.sysfs=/host/sys"
       - "--path.rootfs=/rootfs"
+      # Some hosts expose duplicate hwmon PWM series (for example asus_wmi),
+      # which causes gather errors in node-exporter logs.
+      - "--no-collector.hwmon"
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     # ports:
     # Exposed through nginx by default. For direct local debugging,
@@ -137,6 +140,7 @@ services:
     - "8080:80"
     volumes:
       - ./deployment/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./deployment/nginx/html:/etc/nginx/html:ro
     healthcheck:
       test: ["CMD", "nginx", "-t"]
       interval: 30s
