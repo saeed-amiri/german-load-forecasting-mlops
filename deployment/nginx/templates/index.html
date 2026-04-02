@@ -1,0 +1,69 @@
+<!-- deployment/nginx/templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>German Load Forecasting Platform</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>German Load Forecasting Platform</h1>
+    <p>Unified gateway for APIs, orchestration, monitoring, and model services.</p>
+</header>
+
+<div class="container">
+
+    <h2>Core Services</h2>
+
+    <div class="card">
+        <div>
+            <a href="/api/health" target="_blank" rel="noopener noreferrer">API Health</a>
+            <span class="desc">FastAPI service status</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <a href="/auth/login" target="_blank" rel="noopener noreferrer">Auth Login</a>
+            <span class="desc">User authentication & JWT</span>
+        </div>
+    </div>
+
+    <h2>Orchestration & Monitoring</h2>
+
+    <div class="card">
+        <div>
+            <a href="/airflow/" target="_blank" rel="noopener noreferrer">Airflow UI</a>
+            <span class="desc">DAGs, scheduling, pipelines</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <a href="/prometheus/" target="_blank" rel="noopener noreferrer">Prometheus</a>
+            <span class="desc">Metrics scraping & queries</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <a href="/grafana/" target="_blank" rel="noopener noreferrer">Grafana</a>
+            <span class="desc">Dashboards & visualizations</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div>
+            <a href="/cadvisor/" target="_blank" rel="noopener noreferrer">cAdvisor</a>
+            <span class="desc">Dashboards & visualizations</span>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

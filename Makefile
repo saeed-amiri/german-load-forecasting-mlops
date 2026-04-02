@@ -121,7 +121,7 @@ compose-up-monitoring: check-image-tag ## Start monitoring services plus API
 	$(COMPOSE) up -d --build prometheus alertmanager node-exporter cadvisor api
 
 compose-down: ## Stop and remove compose resources
-	$(COMPOSE) down --remove-orphans
+	$(COMPOSE) down --remove-orphans -v
 
 pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts on demand
 	$(COMPOSE) --profile jobs run --rm ingestion \
