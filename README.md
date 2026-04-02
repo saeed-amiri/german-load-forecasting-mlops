@@ -3,13 +3,13 @@
 
 # What
 **Project Idea**  
-> A production-ready MLOPS sytem that forecast short-term electricity load in Germany and detects anomalies in consumpation patterns.
+> A production-ready MLOps system that forecasts short-term electricity load in Germany and detects anomalies in consumption patterns.
 
 <details>
 
 ### Output of the system: 
 - Hourly / day-ahead electricity demand forecast for Germany  
-- Detection of abnormal consumption patterns (spikes, drops, sensor errors, etc.) → Anomaly detectiin  
+- Detection of abnormal consumption patterns (spikes, drops, sensor errors, etc.) -> anomaly detection  
 - Automated monitoring of model performance and data drift  
 
 ### Prediction target:
@@ -30,7 +30,7 @@
 
 <details>
 
-### Why anomaly detetection is matters:
+### Why anomaly detection matters:
 Operational systems must detect anomalies like:  
 - sensor failures  
 - missing telemetry  
@@ -61,9 +61,9 @@ Prediction service (API)
 Monitoring + drift detection  
      ↓  
 Automatic retraining  
+```
 
 </details>
-```
 
 # Access Links And Curl Cheat Sheet
 
