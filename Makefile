@@ -1,7 +1,8 @@
 .PHONY: \
 	help check-image-tag check-api-port check-airflow-admin-env \
 	build build-base build-api build-auth run-api-docker \
-	compose-up compose-up-debug compose-up-monitoring compose-down \
+	compose-up compose-up-all compose-up-debug compose-up-debug-all compose-up-monitoring compose-down \
+	pipeline-run pipeline-stage \
 	api-check airflow-check airflow-reset-admin prometheus-targets-check \
 	repro repro-stage api-load lint lint-fix format \
 	clean-db prune-docker \
@@ -19,6 +20,11 @@ APP_UID ?= $(shell id -u)
 APP_GID ?= $(shell id -g)
 PROMETHEUS_TOOL_IMAGE ?= prom/prometheus:v2.55.1
 COMPOSE ?= docker compose
+
+SERVING_SERVICES := \
+	prometheus alertmanager node-exporter cadvisor grafana nginx \
+	airflow-postgres airflow-init airflow-webserver airflow-scheduler \
+	base api auth
 
 define require_var
 	@test -n "$($1)" || (echo "$1 is required. Define it in .env or pass $1=<value>." && exit 1)
@@ -91,21 +97,57 @@ run-api-docker: check-image-tag check-api-port build-api ## Run API container lo
 		--mount type=bind,src=$(CURDIR)/data,dst=/app/data,readonly \
 		load-forecast-api:$(IMAGE_TAG)
 
-compose-up: check-image-tag ## Build and start full stack
-	$(COMPOSE) build base
-	$(COMPOSE) build
-	$(COMPOSE) up
+compose-up: check-image-tag ## Build and start serving stack (no batch jobs)
+	$(COMPOSE) build $(SERVING_SERVICES)
+	$(COMPOSE) up $(SERVING_SERVICES)
 
-compose-up-debug: check-image-tag ## Start stack with debug port overrides
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml build base
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml build
-	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml up
+compose-up-all: check-image-tag ## Build and start full stack including batch jobs
+	$(COMPOSE) --profile jobs build
+	$(COMPOSE) --profile jobs up
+
+compose-up-debug: check-image-tag ## Start serving stack with debug port overrides
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml \
+		build $(SERVING_SERVICES)
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml \
+		up $(SERVING_SERVICES)
+
+compose-up-debug-all: check-image-tag ## Start full stack with debug ports including jobs
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml \
+		--profile jobs build
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.debug.yml \
+		--profile jobs up
 
 compose-up-monitoring: check-image-tag ## Start monitoring services plus API
 	$(COMPOSE) up -d --build prometheus alertmanager node-exporter cadvisor api
 
 compose-down: ## Stop and remove compose resources
 	$(COMPOSE) down --remove-orphans
+
+pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts on demand
+	$(COMPOSE) --profile jobs run --rm ingestion \
+		python -m services.data.ingestion.main
+	$(COMPOSE) --profile jobs run --rm preprocessing \
+		python -m services.data.preprocessing.main
+	$(COMPOSE) --profile jobs run --rm marts \
+		python -m services.data.marts.main
+
+pipeline-stage: check-image-tag ## Run one pipeline job (STAGE=ingestion|preprocessing|marts)
+	@test -n "$(STAGE)" || \
+		(echo "Usage: make pipeline-stage STAGE=ingestion|preprocessing|marts" && exit 1)
+	@case "$(STAGE)" in ingestion|preprocessing|marts) ;; \
+		*) echo "Invalid STAGE=$(STAGE). Use ingestion, preprocessing, or marts."; exit 1 ;; \
+	esac
+	@case "$(STAGE)" in \
+		ingestion) \
+			$(COMPOSE) --profile jobs run --rm ingestion \
+				python -m services.data.ingestion.main ;; \
+		preprocessing) \
+			$(COMPOSE) --profile jobs run --rm preprocessing \
+				python -m services.data.preprocessing.main ;; \
+		marts) \
+			$(COMPOSE) --profile jobs run --rm marts \
+				python -m services.data.marts.main ;; \
+	esac
 
 api-check: check-api-port ## Check API health and alert endpoint
 	@echo "Checking API health on localhost:$(API_PORT)"

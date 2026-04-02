@@ -343,6 +343,7 @@ services:
     restart: unless-stopped
 
   ingestion:
+    profiles: ["jobs"]
     build:
       context: .
       dockerfile: docker/ingestion/Dockerfile
@@ -360,6 +361,7 @@ services:
       - backend
 
   preprocessing:
+    profiles: ["jobs"]
     build:
       context: .
       dockerfile: docker/preprocessing/Dockerfile
@@ -377,6 +379,7 @@ services:
       - backend
 
   marts:
+    profiles: ["jobs"]
     build:
       context: .
       dockerfile: docker/marts/Dockerfile

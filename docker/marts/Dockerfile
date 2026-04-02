@@ -11,5 +11,3 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 COPY --chown=appuser:appuser services/data/marts ./services/data/marts
 
 USER appuser
-
-CMD ["python", "-m", "services.data.marts.main"]

@@ -4,6 +4,7 @@ stages:
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
       load-forecast-ingestion:$IMAGE_TAG
+      python -m services.data.ingestion.main
     deps:
       - data/raw/time_series-2020-10-06.csv
       - docker/base/Dockerfile
@@ -22,6 +23,7 @@ stages:
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
       load-forecast-preprocessing:$IMAGE_TAG
+      python -m services.data.preprocessing.main
     deps:
       - data/raw/database.duckdb
       - docker/base/Dockerfile
@@ -40,6 +42,7 @@ stages:
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
       load-forecast-marts:$IMAGE_TAG
+      python -m services.data.marts.main
     deps:
       - data/processed/processed.parquet
       - docker/base/Dockerfile
