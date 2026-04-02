@@ -1,176 +1,69 @@
-# german-load-forecasting-mlops: Dev README
-MLOps Pipeline for German Electricity Load Forecasting &amp; Anomaly Detection
+# Developer Guide
 
-# Important Note
-## The model Server:
-The heart of the system:  
-- **Loading** a trained model  
-- **Exposing** an API endpoint (e.g., for predictions)  
-- **Handeling** incoming requests and running inference
+This document is for contributors and maintainers of the German load forecasting MLOps stack.
 
-**Common Frameworks**: TensorFlow Serving, TorchServe, FastAPI, Flask, NVidia Triton Inference Server  
+## Scope
 
-## The API Gateway:
-- **Routing**: Directing incoming requests to the appropriate model server or service  
-- **Authentication**: Ensuring only authorized users can access the API  
-- **Rate Limiting**: Controlling the number of requests to prevent overload  
-- **Monitoring**: Tracking API usage and performance metrics
+The platform targets two outcomes:
+- short-term German electricity load forecasting
+- anomaly detection for abnormal consumption behavior
 
-**Common Frameworks**: Kong, AWS API Gateway, NGINX, Apigee, Traefik, Tyk
+## Core Components
 
-## The Reverse Proxy:
-Don't confuse with API Gateway, it is a more general-purpose server that forwards requests to other servers. It can be used for load balancing, SSL termination, and caching.
+### Model Service
+Responsibilities:
+- load trained model artifacts
+- expose inference endpoints
+- execute request-time prediction logic
 
-**Common Frameworks**: NGINX
+Typical tools: FastAPI, Flask, TorchServe, TensorFlow Serving, Triton.
 
-## The Load Balancer:
-- **Distributing** incoming traffic across multiple model servers to ensure high availability and reliability
-- **Health Checks**: Monitoring the health of model servers and routing traffic away from unhealthy instances
+### API Gateway
+Responsibilities:
+- route external requests to internal services
+- enforce authentication and authorization
+- apply rate limits and basic traffic protection
+- provide centralized observability hooks
 
-**Common Frameworks**: HAProxy, AWS Elastic Load Balancing, NGINX, Traefik
+Typical tools: NGINX, Kong, Traefik, AWS API Gateway.
 
-## The end-to-end Request Flow:
-What's happening here? 1. The User sends a prediction request. 2. The Load Balancer receives it and sends it to the API Gateway. 3. The API Gateway checks credentials and forwards the request back to the load balancer to be sent to a model server. 4. The Load Balancer chooses an available server (Model_Server_1) and sends the request. 5. The Model Server makes the prediction and returns it. 6. The response travels back through the same path to the user.
+### Reverse Proxy
+A reverse proxy forwards traffic to internal services and often handles TLS, buffering, and caching. It is not the same as a full API gateway.
 
-## Key Considerations:
-- **CI/CD**: Implement continuous integration and continuous deployment pipelines to automate testing and deployment processes, ensuring that changes can be safely and efficiently rolled out to production.
-- **Scalability**: Ensure that your architecture can handle increased traffic by adding more model servers and load balancers as needed.  
-- **Security**: Implement robust authentication and authorization mechanisms to protect your API and model servers.  
-- **Monitoring and Logging**: Set up comprehensive monitoring and logging to track the performance and health of your system, and to quickly identify and resolve issues.  
-- **Testing**: Implement automated tests for your API endpoints and model servers to ensure reliability and correctness.  
-- **Documentation**: Maintain clear and up-to-date documentation for your architecture, setup instructions, and API endpoints to facilitate onboarding and maintenance.
+### Load Balancer
+Responsibilities:
+- distribute traffic across service replicas
+- remove unhealthy backends from rotation
+- improve availability under load
 
-## Pitfalls:
-- **Over-engineering from the start**: Avoid adding unnecessary components that complicate the architecture without providing significant benefits. Start simple and iterate as needed.  
-- **Ignoring the network**: Ensure that the network infrastructure can handle the traffic and latency requirements of your application. And type of communication between components: Http, gRPC, etc.  
-- **Not monitoring**: Implement monitoring and logging from the beginning to quickly identify and resolve issues.  
-- **Confusing components**:  Not understanding the distinct roles of the API Gateway, Reverse Proxy, and Load Balancer can lead to misconfigurations and inefficiencies.
-- **Forgetting about state**: Assuming all your services are stateless. While model servers often are, you might need to manage user sessions or cache data, which introduces state and complexity.
+Typical tools: NGINX, HAProxy, managed cloud balancers.
 
-## Documentation style:
-- **Project Overview**: A brief description of the problem you are solving.
-- **Architecture**: A diagram and explanation of your current system design.
-- **Setup Instructions**: How to set up the environment and install dependencies.
-- **How to Run**: Instructions for running the key components of your system (e.g., starting the API server, running the training pipeline).
-- **How to Test**: Instructions for running the automated tests.
-- **Deployment**: Instructions for deploying the system to a production environment.
-- **Contributing**: Guidelines for contributing to the project.
+## Request Flow (Conceptual)
 
+1. Client sends request.
+2. Gateway validates credentials and policy.
+3. Request is routed to the target service.
+4. Service processes and responds.
+5. Gateway/proxy returns response to client.
 
-# Selected Style:
-## Serving Patterns:
-**The Serving Template Pattern: Standardize Your Deployments** 
-As you deploy more models, you'll notice you're writing the same boilerplate code over and over: loading the model, setting up the API, handling requests. The Serving Template Pattern solves this by creating a standardized, reusable template for your model servers.  
+## Engineering Guidelines
 
-**How it works:**  
+- CI/CD: run tests and checks before deployment.
+- Security: avoid hardcoded secrets; use env vars or a secret manager.
+- Observability: expose health endpoints, metrics, and structured logs.
+- Reliability: design for retries, timeouts, and graceful degradation.
+- Documentation: keep setup/run/test instructions current.
 
-You create a generic model server (e.g., a Docker container) that can load and serve any model that follows a specific format. To deploy a new model, you simply provide the model file and a configuration file—no new code required.
+## Common Pitfalls
 
-## Caching Patterns:
-It needed, but clearing it up and wrong, outdated cache is a bad pitfall.
+- Over-engineering too early.
+- Blurring responsibilities between gateway, proxy, and app service.
+- Missing monitoring for data, models, and service health.
+- Ignoring stateful concerns (sessions, cache invalidation, idempotency).
 
-## Model Load Pattern
-This pattern decouples the model from the server image. The model server code is in the image, but the model artifact itself is downloaded from a separate location (like a model registry or cloud storage) when the server starts up.  
-**Creating Pipeline Bottlenecks**: In a Multiple-Stage Prediction Pipeline, one slow model can slow down the entire chain. It's crucial to monitor the latency of each stage to identify and optimize bottlenecks.
+## SQL Layering Convention
 
-## The Cornerstone of Reproducibility: Data & Model Versioning
-Using **DVC** (Data Version Control) to track changes in your datasets and model artifacts ensures that you can reproduce results and understand the history of your experiments. DVC integrates with Git, allowing you to version control large files and datasets alongside your code.
-
-**Model Explainability**:
-
-While not a formal design pattern in the same vein as the others, Model Explainability (also known as Interpretability) is a critical consideration in modern ML systems. It addresses the question: "Why did my model make this specific prediction?"  
-
-**Why it Matters**:
-
-    Debugging: Understanding why a model makes incorrect predictions is crucial for fixing it.  
-    Trust & Transparency: For stakeholders and users to trust a system, they often need to understand its decision-making process.  
-    Regulatory Compliance: In fields like finance and healthcare, being able to explain model decisions is often a legal or regulatory requirement.  
-
-**Common Tools**:
-
-    'SHAP' (SHapley Additive exPlanations): A game theory-based approach to explain the output of any machine learning model. It provides clear visualizations of which features contributed most to a prediction.  
-    'LIME' (Local Interpretable Model-agnostic Explanations): A technique that explains individual predictions by learning a simpler, interpretable model around the prediction's neighborhood.
-
-**Common pitfalls**:
-
-    Data Leakage: The most dangerous pitfall in training. This happens when information from your validation or test set accidentally leaks into your training data, causing your model to look much more accurate than it actually is.  
-    Incomplete Versioning: Versioning your code is good, but it's not enough. A common mistake is failing to version the data and the model together. Without all three, you can't truly reproduce a result.  
-    Searching on Your Test Set: Never use your final test set for hyperparameter searching. The test set should only be touched once, at the very end, to get an unbiased evaluation of your final model. Searching on it will lead to an over-optimistic and misleading performance metric.  
-    Ignoring Pipeline Failures: A silent failure in your training pipeline (e.g., a data preprocessing step fails to run) can lead to a model being trained on corrupted data. Robust monitoring and alerting for your training pipelines are critical.  
-
-## Quality Assurance & Safe Deployment:
-**Canary Deployments**: This strategy involves rolling out a new model version to a small subset of users or traffic before fully deploying it. This allows you to monitor the new model's performance and catch any issues before they affect all users. If the new model performs well, you can gradually increase its traffic until it's fully deployed. If it performs poorly, you can quickly roll back to the previous version without impacting all users.  
-
-**A/B Testing**: Similar to canary deployments, A/B testing involves running two versions of a model (the current version and the new version) simultaneously and comparing their performance on real user traffic. This allows you to make data-driven decisions about whether the new model is an improvement over the current one. 
-
-**Security Best Practices**: Implementing robust security measures is crucial when deploying machine learning models. This includes securing your API endpoints with authentication and authorization, encrypting sensitive data, and regularly updating your dependencies to patch vulnerabilities. Additionally, consider implementing rate limiting to prevent abuse of your API and monitoring for unusual activity that could indicate a security breach. Common tools for securing APIs include OAuth for authentication and JWT (JSON Web Tokens) for authorization. Always follow the principle of least privilege, giving users and services only the access they need to perform their tasks. Use a Secret Management Tool (Advanced): For more complex systems, dedicated secret management tools like HashiCorp Vault or cloud-native solutions (AWS Secrets Manager, Google Secret Manager) provide centralized, secure storage with fine-grained access control and auditing.  
-
----
-
-# Structure:
-
-following from the root of the project: [Ref. Example](https://github.com/jomariya23156/sales-forecast-mlops-at-scale)
-
-```text
-├── airflow
-│   └── dags
-├── configs
-├── core
-├── deployment
-│   ├── grafana
-│   ├── nginx
-│   └── prometheus
-├── docker
-├── services
-│   ├── api
-│   ├── data
-│   │   ├── ingestion
-│   │   └── preprocessing
-│   └── model
-│       ├── inference
-│       └── training
-└── tests
-
-```
-
-current tree:
-
-```text
-sql/
-├── api
-│   └── target_view.sql
-├── data
-│   ├── ingestion
-│   │   └── 00_transform.sql
-│   └── preprocessing
-│       └── quality_check.sql
-└── playground.sql
-```
-
-👉 It’s not *wrong*, but it’s **conceptually messy**:
-
-* “ingestion” + “transform” mixed
-* no clear **data layers**
-* “preprocessing” is vague
-* “target_view” too model-specific too early
-
----
-
-# 🔥 What’s the real issue?
-
-Your structure is based on:
-
-> *what scripts do*
-
-But good data systems are based on:
-
-> **what layer of data they produce**
-
----
-
-# ✅ Clean Architecture (what you should move toward)
-
-## 🔹 Replace your structure with this:
+Use data layers based on outputs, not script purpose.
 
 ```text
 sql/
@@ -178,185 +71,30 @@ sql/
 │   └── stg_german_load.sql
 ├── features/
 │   └── fct_german_load.sql
-├── marts/                  -- optional (API / serving layer)
+├── marts/
 │   └── german_load_api.sql
 ├── quality/
 │   └── data_quality_checks.sql
 └── playground.sql
 ```
 
----
+Layer intent:
+- staging: cleaned, standardized base tables
+- features: model-ready feature sets
+- marts: serving-oriented views/tables
+- quality: data validation checks
 
-# 🧠 Map from YOUR structure → BETTER one
+## Reproducibility
 
-### ❌ Current:
+- Track code in Git.
+- Track large data/model artifacts with DVC.
+- Pin runtime dependencies in environment files.
+- Keep experiments and model versions traceable.
 
-```text
-data/ingestion/00_transform.sql
-```
+## Suggested Dev Checklist
 
-### ✅ Replace with:
-
-```text
-staging/stg_german_load.sql
-```
-
-👉 This is your **Layer 1**
-
----
-
-### ❌ Current:
-
-```text
-data/preprocessing/quality_check.sql
-```
-
-### ✅ Replace with:
-
-```text
-quality/data_quality_checks.sql
-```
-
-👉 Keep it, just rename for clarity
-
----
-
-### ❌ Current:
-
-```text
-api/target_view.sql
-```
-
-### ⚠️ Problem:
-
-* “target” is **model logic**
-* “api” is **serving layer**
-
-👉 You’re mixing concerns
-
----
-
-### ✅ Replace with:
-
-```text
-features/fct_german_load.sql
-```
-
-AND optionally:
-
-```text
-marts/german_load_api.sql
-```
-
----
-
-# 🧱 Final Clean Mapping
-
-| Layer    | Purpose            | Your new file             |
-| -------- | ------------------ | ------------------------- |
-| Raw      | untouched CSV      | (already exists)          |
-| Staging  | cleaned base table | `stg_german_load.sql`     |
-| Features | ML-ready dataset   | `fct_german_load.sql`     |
-| Serving  | API / dashboards   | `german_load_api.sql`     |
-| Quality  | validation checks  | `data_quality_checks.sql` |
-
----
-
-# 🎯 What EACH file should do
-
-## 1. `stg_german_load.sql` (VERY IMPORTANT)
-
-* select relevant DE columns
-* rename
-* filter nulls
-
-👉 NO lags, NO features
-
----
-
-## 2. `fct_german_load.sql`
-
-* define target
-* create features
-* add lag columns
-
----
-
-## 3. `german_load_api.sql` (optional but powerful)
-
-* expose:
-
-  * latest predictions
-  * recent data
-
-👉 This is what your FastAPI would read
-
----
-
-## 4. `data_quality_checks.sql`
-
-* null checks
-* range checks
-* anomaly detection (later)
-
----
-
-In data engineering (especially dbt-style):
-
-    stg = staging → cleaned raw data
-
-    fct = fact table → main analytical table (features, metrics)
-
-👉 So:
-
-    stg_german_load → cleaned base data
-
-    fct_german_load_features → model-ready dataset
-
-
-##  25 Mär 2026
-Your direction is very good. You are building in the right order.
-
-Short answer:
-1. Yes, full Mlflow and Airflow can wait until you have at least one real training/inference workflow.
-2. Nginx can be next, but only if you now want reverse proxy behavior (single entrypoint, routing, TLS prep, static caching).
-3. Before adding many new services, do one hardening pass on what you already have.
-
-Recommended next order for your project
-
-1. Harden current pipeline first
-- Keep DVC for finite batch stages only.
-- Keep Docker Compose for long-running services.
-- Add basic endpoint tests for API and pipeline smoke checks.
-- Add a consistent env strategy (.env, secrets, config defaults).
-
-2. Add Prometheus + Grafana before Nginx
-- You already have /health, so next add /metrics.
-- This gives visibility before stack complexity grows.
-- Then every new service (Nginx, Mlflow, Airflow later) becomes easier to debug.
-
-3. Add Nginx
-- Put API behind Nginx.
-- Add reverse proxy rules, timeouts, and simple rate limiting.
-- Later, when deployed outside localhost, add TLS there.
-
-4. Add Mlflow skeleton now, full use later
-- You can initialize Mlflow server now and verify it runs.
-- Real value starts when model training exists: params, metrics, artifacts, model registry.
-- Until then, keep it minimal to avoid noise.
-
-5. Add Airflow after you have at least one real scheduled DAG need
-- Good trigger point: multiple pipelines, retries, backfills, alerts, dependencies.
-- Before that, DVC + Make is usually cleaner for learning and iteration.
-
-Decision rule you can use
-
-- If it is batch and reproducible: DVC stage.
-- If it is always-on service: Compose service.
-- If it is external-facing traffic control: Nginx.
-- If it is experiment tracking/registry: Mlflow.
-- If it is scheduling/orchestration with ops features: Airflow.
-
-So for your case right now:
-Best next step is Prometheus + Grafana instrumentation, then Nginx.  
-Mlflow and Airflow can be scaffolded now, but production-style integration should wait for modeling.
+1. Configure local environment and `.env`.
+2. Start stack with Docker Compose.
+3. Validate service health endpoints.
+4. Run tests before opening a PR.
+5. Update docs when behavior changes.
