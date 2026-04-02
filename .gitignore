@@ -9,6 +9,16 @@ playground.sql
 backend.py
 gateway.py
 
+# Public repo cleanup
+airflow/logs/**
+!airflow/logs/.gitkeep
+*.session.sql
+*.duckdb
+DEV-AUTH-ROADMAP.md
+DEV-GATEWAY.md
+dev-history.md
+to-do.md
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
