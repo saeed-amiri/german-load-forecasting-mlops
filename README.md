@@ -84,7 +84,21 @@ cp .env.example .env
 make compose-up
 ```
 
-3. Validate key services.
+This starts serving and monitoring components only. Data pipeline jobs are run separately.
+
+If you want everything in one command (serving + batch jobs), use:
+
+```bash
+make compose-up-all
+```
+
+3. Run data pipeline when needed.
+
+```bash
+make pipeline-run
+```
+
+4. Validate key services.
 
 ```bash
 make api-check
@@ -92,7 +106,7 @@ make airflow-check
 make prometheus-targets-check
 ```
 
-4. Discover all developer commands.
+5. Discover all developer commands.
 
 ```bash
 make help
@@ -106,12 +120,14 @@ make help
 ```bash
 cp .env.example .env
 make compose-up
+make pipeline-run
 make api-check
 ```
 
 Expected result:
 - API health endpoint responds successfully.
 - Core services become reachable via gateway on port 8080.
+- Data views become available after pipeline jobs finish.
 
 </details>
 
@@ -119,7 +135,21 @@ Expected result:
 <summary>Use case 2: Run debug mode with direct service ports</summary>
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.debug.yml up
+make compose-up-debug
+```
+
+Or bring up everything with debug ports (including batch jobs):
+
+```bash
+make compose-up-debug-all
+```
+
+Run jobs only when needed:
+
+```bash
+make pipeline-stage STAGE=ingestion
+make pipeline-stage STAGE=preprocessing
+make pipeline-stage STAGE=marts
 ```
 
 Useful direct ports:
