@@ -1,8 +1,9 @@
 # services/data/marts/main.py
 """
-Marts Service.
-Responsible for creating aggregated tables (Data Marts) for consumption by the API.
-Dependencies: Preprocessing Service (must run first).
+Create marts parquet datasets from preprocessed feature files.
+
+For each source, the module executes two SQL templates (main and melt), writes
+their outputs to parquet, and records row counts for operational visibility.
 """
 
 import logging
@@ -14,7 +15,7 @@ import duckdb
 from configs.config_logs import resolve_service_log_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
-from core.sql_helpers import render_sql_template
+from core.sql_helpers import execute_and_export, render_sql_template
 
 from .context import SourceContext
 
@@ -22,13 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 def _export_table(conn: duckdb.DuckDBPyConnection, table_name: str, output_path: Path) -> int:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    conn.execute(f"COPY {table_name} TO '{output_path}' (FORMAT PARQUET, COMPRESSION ZSTD)")
-    count_row = conn.execute(f"SELECT COUNT(*) FROM '{output_path}'").fetchone()
-    return count_row[0] if count_row else 0
+    """Export a DuckDB table to parquet and return written row count."""
+    return execute_and_export(conn, f"SELECT * FROM {table_name}", output_path)
 
 
 def _process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
+    """Build and export main and melt marts for one source."""
     temp_main = f"tmp_marts_{ctx.source_name}"
     temp_melt = f"tmp_melt_{ctx.source_name}"
 
@@ -61,7 +61,13 @@ def _process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None
 
 
 def run_marts_pipeline() -> None:
-    """Entry point for the marts pipeline."""
+    """
+    Execute marts generation for all configured sources.
+
+    The function initializes config and logging, ensures preprocessing output is
+    available, runs per-source marts creation, and raises a summary error when
+    one or more sources fail.
+    """
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
         raise RuntimeError("Runtime configuration is not initialized.")
@@ -75,9 +81,7 @@ def run_marts_pipeline() -> None:
     errors: list[str] = []
 
     if not config.paths.processed_file.exists():
-        raise FileNotFoundError(
-            f"Processed parquet not found: {config.paths.processed_file}. Run preprocessing first."
-        )
+        raise FileNotFoundError(f"Processed parquet not found: {config.paths.processed_file}. Run preprocessing first.")
 
     with duckdb.connect() as conn:
         for source_name in source_names:
@@ -85,8 +89,8 @@ def run_marts_pipeline() -> None:
             try:
                 ctx = SourceContext.from_config(source_name=source_name, cfg=config)
                 _process_source(conn, ctx)
-            except Exception:
-                logger.error("Failed to build marts for source '%s'", source_name, exc_info=True)
+            except Exception as err:
+                logger.error("Failed to build marts for source '%s': %s", source_name, err, exc_info=True)
                 errors.append(source_name)
 
             duration = time.perf_counter() - start_time

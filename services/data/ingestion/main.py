@@ -1,26 +1,39 @@
-# services/data/ingestion/main.py
+"""
+Run the ingestion pipeline from raw source files into staging tables.
+
+The module coordinates source-by-source ingestion by building a context from
+configuration, loading each raw file into DuckDB, applying the source-specific
+staging SQL template, and emitting audit logs for row/column counts and schema
+mapping.
+"""
 
 import logging
 import time
 from pathlib import Path
 
 import duckdb
-from jinja2 import Template
 
 from configs.config_logs import resolve_service_log_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
+from core.sql_helpers import create_table_from_csv, execute_sql, get_table_stats, render_sql_template
 
 from .context import SourceContext
-from .database import create_table_from_csv, execute_sql, get_table_stats
 
 logger = logging.getLogger(__name__)
 
 
 def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
     """
-    Loads full CSV into permanent Raw table, then transforms to Staging.
-    Logs detailed stats for audit.
+    Process one configured source into raw and staging tables.
+
+    Steps:
+    1. Load the source CSV into the source raw table.
+    2. Render and execute the staging SQL template for that source.
+    3. Log table statistics and column mapping for auditability.
+
+    Raises:
+        RuntimeError: If any step fails for the current source.
     """
     try:
         logger.info(f"Processing source: {ctx.source_name}")
@@ -36,14 +49,14 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
             f"RAW TABLE CREATED | Name: '{raw_table}' | Rows: {raw_stats['rows']:,} | Columns: {raw_stats['columns']}"
         )
 
-        with open(ctx.sql_template_path, "r", encoding="utf8") as f:
-            template = Template(f.read())
-
-        sql_query = template.render(
-            raw_source_table=raw_table,
-            staging_table=staging_table,
-            columns=ctx.columns,
-            timestamp_raw=ctx.timestamp_column,
+        sql_query = render_sql_template(
+            ctx.sql_template_path,
+            context={
+                "raw_source_table": raw_table,
+                "staging_table": staging_table,
+                "columns": ctx.columns,
+                "timestamp_raw": ctx.timestamp_column,
+            },
         )
 
         logger.info("Executing staging transformation...")
@@ -64,13 +77,17 @@ def process_source(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
         logger.info(f"SUCCESS: Source '{ctx.source_name}' processed.")
 
     except Exception as err:
-        logger.error(f"Failed to process source '{ctx.source_name}'", exc_info=True)
-        raise RuntimeError(f"Processing {ctx.raw_file} Failed!") from err
+        raise RuntimeError(f"Processing source '{ctx.source_name}' failed for file: {ctx.raw_file}") from err
 
 
 def run_ingestion() -> None:
     """
-    Main entry point for ingestion.
+    Execute ingestion for all configured sources.
+
+    The function initializes config and logging, opens one DuckDB connection,
+    processes each source independently, and collects failures so one source
+    error does not stop the remaining sources. If any source fails, it raises
+    a summary RuntimeError at the end.
     """
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
@@ -81,7 +98,7 @@ def run_ingestion() -> None:
 
     logger.info("Starting ingestion-pipeline execution...")
     source_names = list(config.sql.sources.keys())
-    errors = []
+    errors: list[str] = []
 
     with duckdb.connect(str(config.paths.database)) as conn:
         for name in source_names:
@@ -91,8 +108,8 @@ def run_ingestion() -> None:
                 ctx = SourceContext.from_config(name, config)
                 process_source(conn, ctx)
 
-            except Exception:
-                logger.error(f"Failed to process source '{name}'", exc_info=True)
+            except Exception as err:
+                logger.error("Failed to process source '%s': %s", name, err, exc_info=True)
                 errors.append(name)
 
             duration = time.perf_counter() - start_time

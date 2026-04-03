@@ -1,7 +1,10 @@
 # services/data/preprocessing/main.py
 """
-Main orchestrator for the data preprocessing pipeline.
-Responsible for transforming data from Staging -> Parquet Features.
+Build feature parquet outputs from staging tables.
+
+The module runs source-by-source preprocessing by rendering SQL templates,
+exporting query results to parquet, and logging a compact quality overview for
+each generated file.
 """
 
 import logging
@@ -21,28 +24,33 @@ logger = logging.getLogger(__name__)
 
 
 def log_parquet_overview(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
-    """Runs quality checks against the generated Parquet file using the SQL template."""
+    """
+    Log one-row quality summary for a generated parquet output.
+
+    The summary query is read from the source log template and executed against
+    the output parquet file path.
+    """
 
     context = {"target_table": f"'{ctx.output}'"}
 
-    try:
-        sql_query = render_sql_template(ctx.sql_path_log, context)
-        clean_sql = sql_query.strip().rstrip(";")
-        stats_df = conn.execute(clean_sql).fetchdf()
+    sql_query = render_sql_template(ctx.sql_path_log, context)
+    clean_sql = sql_query.strip().rstrip(";")
+    stats_df = conn.execute(clean_sql).fetchdf()
 
-        if not stats_df.empty:
-            report = stats_df.iloc[0].to_markdown()
-            logger.info(f"\n--- Features Overview ({ctx.source_name}) ---\n{report}")
-        else:
-            logger.warning("Features Overview returned no data.")
-
-    except Exception as err:
-        logger.error(f"Validation failed: {err}")
-        raise
+    if not stats_df.empty:
+        report = stats_df.iloc[0].to_markdown()
+        logger.info(f"\n--- Features Overview ({ctx.source_name}) ---\n{report}")
+    else:
+        logger.warning("Features Overview returned no data.")
 
 
 def run_transformation(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> int:
-    """Executes SQL and exports to Parquet."""
+    """
+    Render the load template and export its result set to parquet.
+
+    Returns:
+        Number of rows written to the parquet output.
+    """
 
     context = {"staging_table": ctx.staging_table}
 
@@ -54,17 +62,28 @@ def run_transformation(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> i
 
 
 def process_sources(conn: duckdb.DuckDBPyConnection, ctx: SourceContext) -> None:
-    """Process a single source."""
+    """
+    Run transformation and overview logging for one source.
+
+    Raises:
+        RuntimeError: If preprocessing fails for the current source.
+    """
     try:
         count = run_transformation(conn, ctx)
         logger.info(f"SUCCESS: Created Parquet file with {count} rows.")
         log_parquet_overview(conn, ctx)
     except Exception as err:
-        logger.critical("Pipeline execution failed!", exc_info=True)
-        raise RuntimeError(f"Preprocessing Service Failure: {err}") from err
+        raise RuntimeError(f"Preprocessing failed for source '{ctx.source_name}'") from err
 
 
 def run_preprocessing() -> None:
+    """
+    Execute preprocessing for all configured sources.
+
+    The function initializes config and logging, validates that ingestion output
+    database exists, processes each source independently, and raises a summary
+    error if any source fails.
+    """
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
         raise RuntimeError("Runtime configuration is not initialized.")
@@ -75,7 +94,7 @@ def run_preprocessing() -> None:
     logger.info("Starting preprocessing-pipeline execution...")
 
     source_names = list(config.sql.sources.keys())
-    errors = []
+    errors: list[str] = []
 
     db_path = str(config.paths.database)
 
@@ -91,8 +110,8 @@ def run_preprocessing() -> None:
             try:
                 ctx = SourceContext.from_config(source_name=name, cfg=config)
                 process_sources(conn, ctx)
-            except Exception:
-                logger.error(f"Failed to process source '{name}'", exc_info=True)
+            except Exception as err:
+                logger.error("Failed to process source '%s': %s", name, err, exc_info=True)
                 errors.append(name)
 
             duration = time.perf_counter() - start_time
