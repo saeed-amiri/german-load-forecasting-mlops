@@ -1,4 +1,9 @@
-# services/data/preprocessing/context.py
+"""
+Build preprocessing source context from pipeline configuration.
+
+Each context bundles SQL templates and output location needed to transform a
+staging table into feature parquet for a source.
+"""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,7 +14,7 @@ from configs.main import PipelineConfig
 
 @dataclass
 class SourceContext:
-    """Context for a single data source"""
+    """Resolved preprocessing inputs and output paths for one source."""
 
     source_name: str
     sql_path_load: Path
@@ -19,6 +24,12 @@ class SourceContext:
 
     @classmethod
     def from_config(cls, source_name: str, cfg: PipelineConfig) -> SourceContext:
+        """
+        Create preprocessing context for a configured source.
+
+        Resolves load/log SQL template paths, staging table name, and parquet
+        destination while validating required configuration sections.
+        """
         source_cfg = cfg.sql.sources.get(source_name)
         if not source_cfg:
             raise ValueError(f"Source {source_name} not found")

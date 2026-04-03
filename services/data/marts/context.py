@@ -1,3 +1,10 @@
+"""
+Build marts source context from pipeline configuration.
+
+The context resolves SQL templates and parquet output destinations used to
+materialize both main and melt marts datasets for each source.
+"""
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,7 +14,7 @@ from configs.main import PipelineConfig
 
 @dataclass
 class SourceContext:
-    """Context for a single source in the marts stage."""
+    """Resolved marts SQL and output paths for one configured source."""
 
     source_name: str
     sql_path_main: Path
@@ -18,6 +25,12 @@ class SourceContext:
 
     @classmethod
     def from_config(cls, source_name: str, cfg: PipelineConfig) -> "SourceContext":
+        """
+        Create marts context for a configured source.
+
+        Validates source and runtime availability, resolves SQL template paths,
+        and computes parquet output locations for main and melt marts outputs.
+        """
         source_cfg = cfg.sql.sources.get(source_name)
         if not source_cfg:
             raise ValueError(f"Source {source_name} not found")

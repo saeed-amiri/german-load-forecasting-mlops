@@ -1,4 +1,9 @@
-# services/data/ingestion/context.py
+"""
+Build ingestion source context from pipeline configuration.
+
+The context object resolves all per-source values needed by ingestion runtime,
+including raw input path, staging SQL template path, and target table names.
+"""
 
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,7 +14,7 @@ from configs.main import PipelineConfig
 
 @dataclass
 class SourceContext:
-    """Context for a single data source."""
+    """Resolved ingestion inputs and targets for one configured source."""
 
     source_name: str
     raw_file: Path
@@ -22,6 +27,12 @@ class SourceContext:
 
     @classmethod
     def from_config(cls, source_name: str, cfg: PipelineConfig) -> SourceContext:
+        """
+        Create a source context from global pipeline configuration.
+
+        Validates source presence and runtime config, then resolves SQL template
+        and filesystem paths used by ingestion execution.
+        """
         source_cfg = cfg.sql.sources.get(source_name)
         if not source_cfg:
             raise ValueError(f"Source {source_name} not found")
