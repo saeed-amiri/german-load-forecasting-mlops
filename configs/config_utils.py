@@ -15,7 +15,7 @@ def render_config_file(config_path: Path) -> dict:
     """Read the config file and handle the input ingestion with ninja"""
     input_dir: Path = config_path.parent / "inputs"
     context = {}
-    for name in ["sql", "api", "paths", "logging", "auth"]:
+    for name in ["sql", "api", "paths", "logging", "auth", "training"]:
         file_path = input_dir / f"{name}.yml"
         if not file_path.exists():
             raise FileNotFoundError(f"Missing expected config input: {file_path}")

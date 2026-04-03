@@ -13,3 +13,6 @@ api: {{ api }}
 
 # Auth settings
 auth: {{ auth }}
+
+# Training
+train: {{ training }}

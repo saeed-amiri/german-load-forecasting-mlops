@@ -1,0 +1,35 @@
+# configs/inputs/training.yml
+common:
+  database:
+    name: processed.parquet
+  target_column: load_actual
+  train_columns:
+    - solar_actual
+    - wind_actual
+    - wind_offshore
+  drop_columns:
+    - load_forecast
+
+
+evaluation:
+  metrics:
+    - mae
+    - rmse
+  cv_folds: 3
+  scoring: neg_mean_absolute_error
+  save_predictions: true
+
+
+models:
+  gbc:
+    type: GradientBoostingClassifier
+    param_grid:
+      n_estimators: [200, 500]
+      max_depth: [5, 8]
+      min_samples_split: [5, 10]
+      learning_rate: [0.01, 0.05]
+    train_size: 0.8
+    evaluation_override:
+      metrics:
+        - mae
+        - rmse

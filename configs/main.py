@@ -15,6 +15,7 @@ from .config_logs import LoggingConfig
 from .config_paths import PathSettings
 from .config_runtime import RuntimePaths
 from .config_sql import SQLConfig
+from .config_trains import TrainingConfig
 from .config_utils import initialize_project_root, render_config_file
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,7 @@ class PipelineConfig(BaseModel):
     logging: LoggingConfig
     api: APIConfig
     auth: AuthConfig
+    train: TrainingConfig
     runtime: Optional[RuntimePaths] = Field(default=None)
 
     @staticmethod
