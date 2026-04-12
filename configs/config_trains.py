@@ -58,11 +58,19 @@ class ModelTrainingConfig(BaseModel):
     evaluation_override: ModelEvaluationOverride | None = None
 
 
+class SavedFileConfig(BaseModel):
+    """Name of the output files"""
+
+    best_param_file: str
+    predictions_file: str
+
+
 class TrainingConfig(BaseModel):
     """Top-level training configuration loaded from YAML."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     common: CommonConfig
+    ofiles: SavedFileConfig
     evaluation: EvaluationConfig
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)
