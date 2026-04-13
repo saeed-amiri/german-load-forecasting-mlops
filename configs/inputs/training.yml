@@ -12,6 +12,7 @@ common:
 
 
 ofiles:
+  ofmt: parquet
   best_param_file: best_params
   predictions_file: predictions
 

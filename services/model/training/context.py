@@ -36,6 +36,7 @@ class SourceContext:
     param_grid: dict[str, list[Any]]
     train_size: float
     # SavedFielConfig: Paths of files to be saved
+    ofmt: str
     model_output_dir: Path
     best_params_file: Path
     predictions_file: Path
@@ -57,8 +58,8 @@ class SourceContext:
             raise RuntimeError("Runtime configuration is not initialized.")
 
         output_dir = cfg.paths.model_dir
-        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.parquet"
-        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.parquet"
+        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.{cfg.train.ofiles.ofmt}"
+        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.{cfg.train.ofiles.ofmt}"
 
         dataset_name = Path(cfg.train.common.database.name)
 
@@ -104,6 +105,7 @@ class SourceContext:
             cv_folds=cv_folds,
             scoring=scoring,
             save_predictions=save_predictions,
+            ofmt=cfg.train.ofiles.ofmt,
             model_output_dir=output_dir,
             best_params_file=best_params_file,
             predictions_file=predictions_file,
