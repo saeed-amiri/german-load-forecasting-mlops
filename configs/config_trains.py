@@ -63,6 +63,7 @@ class SavedFileConfig(BaseModel):
 
     best_param_file: str
     predictions_file: str
+    ofmt: str
 
 
 class TrainingConfig(BaseModel):
