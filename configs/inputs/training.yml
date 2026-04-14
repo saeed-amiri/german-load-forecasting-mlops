@@ -7,9 +7,15 @@ common:
     - solar_actual
     - wind_actual
     - wind_offshore
-  drop_columns:
-    - load_forecast
-
+    - solar_actual
+    - wind_actual
+    - wind_onshore
+    - wind_offshore
+    - hour_of_day
+    - day_of_week
+    - load_actual_lag_1
+    - load_actual_lag_24
+    - load_forecast_lag_1
 
 ofiles:
   ofmt: parquet
