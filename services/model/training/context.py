@@ -25,7 +25,6 @@ class SourceContext:
     # CommonConfig: main columns
     target_column: str
     train_columns: list[str]
-    drop_columns: list[str]
     # EvaluationConfig | ModelEvaluationOverrides: Defaults value | per model
     metrics: list[str]
     cv_folds: int
@@ -57,7 +56,7 @@ class SourceContext:
         if cfg.runtime is None:
             raise RuntimeError("Runtime configuration is not initialized.")
 
-        output_dir = cfg.paths.model_dir
+        output_dir = cfg.paths.models_dir
         best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.{cfg.train.ofiles.ofmt}"
         predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.{cfg.train.ofiles.ofmt}"
 
@@ -98,7 +97,6 @@ class SourceContext:
             dataset=dataset,
             target_column=cfg.train.common.target_column,
             train_columns=cfg.train.common.train_columns,
-            drop_columns=cfg.train.common.drop_columns,
             param_grid=model_cfg.param_grid,
             train_size=model_cfg.train_size,
             metrics=metrics,

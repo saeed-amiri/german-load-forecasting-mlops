@@ -22,7 +22,6 @@ class CommonConfig(BaseModel):
     database: DatabaseMapping
     target_column: str
     train_columns: list[str] = Field(default_factory=list)
-    drop_columns: list[str] = Field(default_factory=list)
 
 
 class EvaluationConfig(BaseModel):
