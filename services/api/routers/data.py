@@ -80,7 +80,7 @@ def _plot_targets(ctx: APIContext) -> go.Figure:
             SELECT *
             FROM '{ctx.marts_melt_parquet}'
             WHERE strftime(time, '%Y-%m') = '2015-01'
-              AND Type IN ('load_actual', 'load_forecast')
+              AND Type IN ('load_actual', 'alien_forecast')
             ORDER BY time DESC
             """
         ).fetchdf()
