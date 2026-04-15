@@ -22,7 +22,6 @@ class CommonConfig(BaseModel):
     database: DatabaseMapping
     target_column: str
     train_columns: list[str] = Field(default_factory=list)
-    drop_columns: list[str] = Field(default_factory=list)
 
 
 class EvaluationConfig(BaseModel):
@@ -58,11 +57,43 @@ class ModelTrainingConfig(BaseModel):
     evaluation_override: ModelEvaluationOverride | None = None
 
 
+class TableNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SQLNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SqlConfig(BaseModel):
+    """File and Table names"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tables: TableNames = Field(default_factory=TableNames)
+    files: SQLNames = Field(default_factory=SQLNames)
+
+
 class SavedFileConfig(BaseModel):
     """Name of the output files"""
 
     best_param_file: str
     predictions_file: str
+    ofmt: str
 
 
 class TrainingConfig(BaseModel):
@@ -73,4 +104,5 @@ class TrainingConfig(BaseModel):
     common: CommonConfig
     ofiles: SavedFileConfig
     evaluation: EvaluationConfig
+    sql: SqlConfig = Field(default_factory=SqlConfig)
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)

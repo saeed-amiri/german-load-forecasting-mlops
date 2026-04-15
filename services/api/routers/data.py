@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import duckdb
-import pandas as pd
+import pandas as pd  # TODO: Update to pyarrow
 import plotly.express as px
 import plotly.graph_objects as go
 from fastapi import APIRouter, Request
@@ -80,7 +80,7 @@ def _plot_targets(ctx: APIContext) -> go.Figure:
             SELECT *
             FROM '{ctx.marts_melt_parquet}'
             WHERE strftime(time, '%Y-%m') = '2015-01'
-              AND Type IN ('load_actual', 'load_forecast')
+              AND Type IN ('load_actual', 'alien_forecast')
             ORDER BY time DESC
             """
         ).fetchdf()

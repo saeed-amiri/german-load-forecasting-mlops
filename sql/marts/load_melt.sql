@@ -9,7 +9,7 @@ SELECT time, 'load_actual' AS Type, load_actual AS "Load (MW)"
 FROM {{ features_table }}
 
 UNION ALL
-SELECT time, 'load_forecast' AS Type, load_forecast AS "Load (MW)"
+SELECT time, 'alien_forecast' AS Type, alien_forecast AS "Load (MW)"
 FROM {{ features_table }}
 
 UNION ALL
@@ -26,8 +26,4 @@ FROM {{ features_table }}
 
 UNION ALL
 SELECT time, 'wind_offshore' AS Type, wind_offshore AS "Load (MW)"
-FROM {{ features_table }}
-
-UNION ALL
-SELECT time, 'forecast_error' AS Type, forecast_error AS "Load (MW)"
 FROM {{ features_table }};

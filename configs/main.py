@@ -49,7 +49,7 @@ class PipelineConfig(BaseModel):
                 "processed_file": self._to_abs(self.project_root, self.paths.processed_file),
                 "database": self._to_abs(self.project_root, self.paths.database),
                 "marts_dir": self._to_abs(self.project_root, self.paths.marts_dir),
-                "model_dir": self._to_abs(self.project_root, self.paths.model_dir),
+                "models_dir": self._to_abs(self.project_root, self.paths.models_dir),
             }
         )
 

@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import Any
 
 from configs.main import PipelineConfig
-
+from configs.config_trains import SqlConfig
 
 @dataclass
-class SourceContext:
+class TrainContext:
     """
     Resolved training inputs, hyperparameters, and output paths for one model.
     """
@@ -25,7 +25,6 @@ class SourceContext:
     # CommonConfig: main columns
     target_column: str
     train_columns: list[str]
-    drop_columns: list[str]
     # EvaluationConfig | ModelEvaluationOverrides: Defaults value | per model
     metrics: list[str]
     cv_folds: int
@@ -36,12 +35,15 @@ class SourceContext:
     param_grid: dict[str, list[Any]]
     train_size: float
     # SavedFielConfig: Paths of files to be saved
+    ofmt: str
     model_output_dir: Path
     best_params_file: Path
     predictions_file: Path
+    sql: SqlConfig
+    sql_dir: Path
 
     @classmethod
-    def from_config(cls, model_name: str, cfg: PipelineConfig) -> SourceContext:
+    def from_config(cls, model_name: str, cfg: PipelineConfig) -> TrainContext:
         """
         Create training context for a configured model.
 
@@ -56,9 +58,9 @@ class SourceContext:
         if cfg.runtime is None:
             raise RuntimeError("Runtime configuration is not initialized.")
 
-        output_dir = cfg.paths.model_dir
-        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.parquet"
-        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.parquet"
+        output_dir = cfg.paths.models_dir
+        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.{cfg.train.ofiles.ofmt}"
+        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.{cfg.train.ofiles.ofmt}"
 
         dataset_name = Path(cfg.train.common.database.name)
 
@@ -97,14 +99,16 @@ class SourceContext:
             dataset=dataset,
             target_column=cfg.train.common.target_column,
             train_columns=cfg.train.common.train_columns,
-            drop_columns=cfg.train.common.drop_columns,
             param_grid=model_cfg.param_grid,
             train_size=model_cfg.train_size,
             metrics=metrics,
             cv_folds=cv_folds,
             scoring=scoring,
             save_predictions=save_predictions,
+            ofmt=cfg.train.ofiles.ofmt,
             model_output_dir=output_dir,
             best_params_file=best_params_file,
             predictions_file=predictions_file,
+            sql=cfg.train.sql,
+            sql_dir=cfg.runtime.sql_dir,
         )

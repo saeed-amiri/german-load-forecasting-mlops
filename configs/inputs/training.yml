@@ -6,14 +6,24 @@ common:
   train_columns:
     - solar_actual
     - wind_actual
+    - wind_onshore
     - wind_offshore
-  drop_columns:
-    - load_forecast
-
+    - hour_of_day
+    - day_of_week
+    - load_actual_lag_1
+    - load_actual_lag_24
 
 ofiles:
+  ofmt: parquet
   best_param_file: best_params
   predictions_file: predictions
+
+
+sql:
+  files:
+    load: load_processed_data.sql
+  tables:
+    load: placeholder
 
 
 evaluation:
