@@ -19,6 +19,13 @@ ofiles:
   predictions_file: predictions
 
 
+sql:
+  files:
+    load: load_processed_data.sql
+  tables:
+    load: placeholder
+
+
 evaluation:
   metrics:
     - mae
