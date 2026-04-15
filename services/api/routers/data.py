@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import duckdb
-import pandas as pd
+import pandas as pd  # TODO: Update to pyarrow
 import plotly.express as px
 import plotly.graph_objects as go
 from fastapi import APIRouter, Request
