@@ -57,6 +57,37 @@ class ModelTrainingConfig(BaseModel):
     evaluation_override: ModelEvaluationOverride | None = None
 
 
+class TableNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SQLNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SqlConfig(BaseModel):
+    """File and Table names"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tables: TableNames = Field(default_factory=TableNames)
+    files: SQLNames = Field(default_factory=SQLNames)
+
+
 class SavedFileConfig(BaseModel):
     """Name of the output files"""
 
@@ -73,4 +104,5 @@ class TrainingConfig(BaseModel):
     common: CommonConfig
     ofiles: SavedFileConfig
     evaluation: EvaluationConfig
+    sql: SqlConfig = Field(default_factory=SqlConfig)
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)

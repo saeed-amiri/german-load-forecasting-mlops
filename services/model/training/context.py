@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import Any
 
 from configs.main import PipelineConfig
-
+from configs.config_trains import SqlConfig
 
 @dataclass
-class SourceContext:
+class TrainContext:
     """
     Resolved training inputs, hyperparameters, and output paths for one model.
     """
@@ -39,9 +39,11 @@ class SourceContext:
     model_output_dir: Path
     best_params_file: Path
     predictions_file: Path
+    sql: SqlConfig
+    sql_dir: Path
 
     @classmethod
-    def from_config(cls, model_name: str, cfg: PipelineConfig) -> SourceContext:
+    def from_config(cls, model_name: str, cfg: PipelineConfig) -> TrainContext:
         """
         Create training context for a configured model.
 
@@ -107,4 +109,6 @@ class SourceContext:
             model_output_dir=output_dir,
             best_params_file=best_params_file,
             predictions_file=predictions_file,
+            sql=cfg.train.sql,
+            sql_dir=cfg.runtime.sql_dir,
         )
