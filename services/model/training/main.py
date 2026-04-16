@@ -11,6 +11,7 @@ steps:
 import logging
 from pathlib import Path
 
+import joblib
 import pyarrow as pa
 import adbc_driver_duckdb.dbapi as dbapi
 from sklearn.ensemble import GradientBoostingRegressor
@@ -107,7 +108,10 @@ def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
     )
 
     bst_est = searcher.fit(X_train, y_train)
-    logger.info(f"The best parameters: {bst_est}")
+    
+    joblib.dump(bst_est, ctx.best_params_file)
+    
+    logger.info(f"The best parameters: {bst_est}, Saved to {ctx.best_params_file}")
 
     return bst_est
 
