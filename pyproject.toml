@@ -24,6 +24,7 @@ dependencies = [
     "httpx>=0.28.1",
     "pyarrow>=23.0.1",
     "adbc-driver-manager>=1.11.0",
+    "joblib>=1.5.3",
 ]
 
 [dependency-groups]
