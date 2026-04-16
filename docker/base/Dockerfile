@@ -23,5 +23,5 @@ ARG APP_GID=1000
 
 RUN groupadd --gid ${APP_GID} appuser \
   && useradd --uid ${APP_UID} --gid appuser --create-home appuser \
-  && mkdir -p ./logs ./data \
+  && mkdir -p ./logs ./data ./model \
   && chown -R appuser:appuser /app
