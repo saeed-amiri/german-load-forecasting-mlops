@@ -15,8 +15,8 @@ common:
 
 ofiles:
   ofmt: parquet
-  best_param_file: best_params
-  predictions_file: predictions
+  best_params: best_params
+  predictions: predictions
 
 
 sql:
@@ -30,7 +30,7 @@ evaluation:
   metrics:
     - mae
     - rmse
-  cv_folds: 3
+  cv_folds: 4
   scoring: neg_mean_absolute_error
   save_predictions: true
 

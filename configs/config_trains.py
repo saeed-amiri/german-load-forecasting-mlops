@@ -91,8 +91,8 @@ class SqlConfig(BaseModel):
 class SavedFileConfig(BaseModel):
     """Name of the output files"""
 
-    best_param_file: str
-    predictions_file: str
+    best_params: str
+    predictions: str
     ofmt: str
 
 
