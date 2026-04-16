@@ -68,6 +68,9 @@ build: check-image-tag build-base ## Build all service images
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
 		-t load-forecast-auth:$(IMAGE_TAG) \
 		-f docker/auth/Dockerfile .
+	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
+		-t load-forecast-training:$(IMAGE_TAG) \
+		-f docker/training/Dockerfile .
 
 build-api: check-image-tag build-base ## Build API image only
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
@@ -123,13 +126,15 @@ compose-up-monitoring: check-image-tag ## Start monitoring services plus API
 compose-down: ## Stop and remove compose resources
 	$(COMPOSE) down --remove-orphans -v
 
-pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts on demand
+pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts -> training on demand
 	$(COMPOSE) --profile jobs run --rm ingestion \
 		python -m services.data.ingestion.main
 	$(COMPOSE) --profile jobs run --rm preprocessing \
 		python -m services.data.preprocessing.main
 	$(COMPOSE) --profile jobs run --rm marts \
 		python -m services.data.marts.main
+	$(COMPOSE) --profile jobs run --rm training \
+		python -m services.model.training.main
 
 pipeline-stage: check-image-tag ## Run one pipeline job (STAGE=ingestion|preprocessing|marts)
 	@test -n "$(STAGE)" || \
@@ -147,6 +152,9 @@ pipeline-stage: check-image-tag ## Run one pipeline job (STAGE=ingestion|preproc
 		marts) \
 			$(COMPOSE) --profile jobs run --rm marts \
 				python -m services.data.marts.main ;; \
+		training) \
+			$(COMPOSE) --profile jobs run --rm training \
+				python -m services.model.training.main ;; \
 	esac
 
 api-check: check-api-port ## Check API health and alert endpoint
@@ -242,6 +250,7 @@ api-load: clean-db ## Run ingestion/preprocessing/marts and start API locally
 	uv run python -m services.data.ingestion.main
 	uv run python -m services.data.preprocessing.main
 	uv run python -m services.data.marts.main
+	uv run python -m services.model.training.main
 	uv run uvicorn  services.api.main:app --reload
 
 

@@ -1,9 +1,12 @@
+vars:
+  - .env
+
 stages:
   ingestion:
     cmd: >
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
-      load-forecast-ingestion:$IMAGE_TAG
+      load-forecast-ingestion:{$IMAGE_TAG}
       python -m services.data.ingestion.main
     deps:
       - data/raw/time_series-2020-10-06.csv
@@ -17,12 +20,14 @@ stages:
       - core/
     outs:
       - data/raw/database.duckdb
+    params:
+      - IMAGE_TAG
 
   preprocessing:
     cmd: >
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
-      load-forecast-preprocessing:$IMAGE_TAG
+      load-forecast-preprocessing:{$IMAGE_TAG}
       python -m services.data.preprocessing.main
     deps:
       - data/raw/database.duckdb
@@ -36,15 +41,17 @@ stages:
       - core/
     outs:
       - data/processed/
+    params:
+      - IMAGE_TAG
 
   marts:
     cmd: >
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data
-      load-forecast-marts:$IMAGE_TAG
+      load-forecast-marts:{$IMAGE_TAG}
       python -m services.data.marts.main
     deps:
-      - data/processed/processed.parquet
+      - data/processed/
       - docker/base/Dockerfile
       - docker/base/requirements.txt
       - docker/marts/Dockerfile
@@ -55,12 +62,36 @@ stages:
       - core/
     outs:
       - data/marts/
+    params:
+      - IMAGE_TAG
+
+  training:
+    cmd: >
+      docker run --rm -pull=never
+      --mount type=bind,src=$(pwd)/data,dst=/app/data,readonly
+      --mount type=bind,src=$(pwd)/model,dst=/app/model
+      load-forecast-training:{$IMAGE_TAG}
+      python -m services.model.training.main
+    deps:
+      - data/processed/
+      - model/
+      - docker/base/Dockerfile
+      - docker/base/requirements.txt
+      - docker/training/Dockerfile
+      - docker/training/requirements.txt
+      - sql/training
+      - configs/
+      - core/
+    outs:
+      - model/
+    params:
+      - IMAGE_TAG
 
   api_check:
     cmd: >
       docker run --rm --pull=never
       --mount type=bind,src=$(pwd)/data,dst=/app/data,readonly
-      load-forecast-api:$IMAGE_TAG
+      load-forecast-api:{$IMAGE_TAG}
       python -c "import subprocess,time,urllib.request; p=subprocess.Popen(['uvicorn','services.api.main:app','--host','127.0.0.1','--port','8000']); time.sleep(2); r=urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5); print(r.status); p.terminate(); p.wait(timeout=5)"
     deps:
       - data/marts/

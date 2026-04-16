@@ -59,8 +59,8 @@ class TrainContext:
             raise RuntimeError("Runtime configuration is not initialized.")
 
         output_dir = cfg.paths.models_dir
-        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_param_file}.{cfg.train.ofiles.ofmt}"
-        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions_file}.{cfg.train.ofiles.ofmt}"
+        best_params_file: Path = output_dir / f"{cfg.train.ofiles.best_params}.{cfg.train.ofiles.ofmt}"
+        predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions}.{cfg.train.ofiles.ofmt}"
 
         dataset_name = Path(cfg.train.common.database.name)
 

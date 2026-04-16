@@ -11,6 +11,8 @@ steps:
 import logging
 from pathlib import Path
 
+import time
+import joblib
 import pyarrow as pa
 import adbc_driver_duckdb.dbapi as dbapi
 from sklearn.ensemble import GradientBoostingRegressor
@@ -89,10 +91,12 @@ def split_data(arrow_table: pa.Table, ctx: TrainContext) -> tuple[pa.Table, ...]
     return X_train_table, X_test_table, y_train_table, y_test_table
 
 
-def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
+def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) -> RandomizedSearchCV:
     """
     Find best parameters for the training and so on
     """
+    start_time = time.perf_counter()
+
     tscv = TimeSeriesSplit(n_splits=ctx.cv_folds)
 
     base_model = GradientBoostingRegressor()
@@ -107,7 +111,12 @@ def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
     )
 
     bst_est = searcher.fit(X_train, y_train)
-    logger.info(f"The best parameters: {bst_est}")
+    
+    joblib.dump(bst_est, ctx.best_params_file)
+
+    duration = time.perf_counter() - start_time
+
+    logger.info(f"In {duration:.2f} secondes, computed best parameters: {bst_est}, Saved to {ctx.best_params_file}")
 
     return bst_est
 
