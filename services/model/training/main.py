@@ -11,6 +11,7 @@ steps:
 import logging
 from pathlib import Path
 
+import time
 import joblib
 import pyarrow as pa
 import adbc_driver_duckdb.dbapi as dbapi
@@ -94,6 +95,8 @@ def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
     """
     Find best parameters for the training and so on
     """
+    start_time = time.perf_counter()
+
     tscv = TimeSeriesSplit(n_splits=ctx.cv_folds)
 
     base_model = GradientBoostingRegressor()
@@ -110,8 +113,10 @@ def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
     bst_est = searcher.fit(X_train, y_train)
     
     joblib.dump(bst_est, ctx.best_params_file)
-    
-    logger.info(f"The best parameters: {bst_est}, Saved to {ctx.best_params_file}")
+
+    duration = time.perf_counter() - start_time
+
+    logger.info(f"In {duration:.2f} secondes, the computed best parameters: {bst_est}, Saved to {ctx.best_params_file}")
 
     return bst_est
 
