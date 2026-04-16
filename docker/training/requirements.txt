@@ -1,0 +1,4 @@
+pyarrow>=23.0.1
+adbc-driver-manager>=1.11.0
+scikit-learn>=1.8.0
+joblib>=1.5.3
