@@ -30,7 +30,7 @@ evaluation:
   metrics:
     - mae
     - rmse
-  cv_folds: 4
+  cv_folds: 3
   scoring: neg_mean_absolute_error
   save_predictions: true
 
