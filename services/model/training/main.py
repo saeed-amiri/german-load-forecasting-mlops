@@ -91,7 +91,7 @@ def split_data(arrow_table: pa.Table, ctx: TrainContext) -> tuple[pa.Table, ...]
     return X_train_table, X_test_table, y_train_table, y_test_table
 
 
-def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
+def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) -> RandomizedSearchCV:
     """
     Find best parameters for the training and so on
     """
@@ -116,7 +116,7 @@ def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext):
 
     duration = time.perf_counter() - start_time
 
-    logger.info(f"In {duration:.2f} secondes, the computed best parameters: {bst_est}, Saved to {ctx.best_params_file}")
+    logger.info(f"In {duration:.2f} secondes, computed best parameters: {bst_est}, Saved to {ctx.best_params_file}")
 
     return bst_est
 
