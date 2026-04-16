@@ -397,6 +397,22 @@ services:
     networks:
       - backend
 
+  # Modeling
+  training:
+    profiles: ["jobs"]
+    build:
+      context: .
+      dockerfile: docker/training/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
+    image:
+      load-forecast-training:${IMAGE_TAG:?IMAGE_TAG is required}
+    volumes:
+      - ./data:/app/data:ro
+      - ./model:/app/model:rw
+    networks:
+      - backend
+
 networks:
   backend:
 
