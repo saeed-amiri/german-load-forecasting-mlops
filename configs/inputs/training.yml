@@ -36,7 +36,7 @@ evaluation:
 
 
 models:
-  gbc:
+  gbr:
     model_id: gbr
     param_grid:
       n_estimators: [200, 500]
