@@ -1,4 +1,5 @@
 """Shared typing contracts for training models."""
+
 from typing import Protocol, TypeAlias
 
 import pyarrow as pa
