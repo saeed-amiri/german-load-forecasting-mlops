@@ -17,7 +17,7 @@ def get_model_class(model_id: str):
     model_cls = MODEL_REGISTRY.get(model_id)
     if model_cls is None:
         available = ", ".join(sorted(MODEL_REGISTRY))
-        raise ValueError(f"Unknown model_id '{model_id}'. Available: {available}")
+        raise ValueError(f"Unknown model_id '{model_id}'. Available models: {available}.")
     return model_cls
 
 

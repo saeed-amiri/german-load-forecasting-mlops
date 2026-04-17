@@ -22,7 +22,7 @@ def _check_exist(columns: list[str], cursor: dbapi.Cursor, data: Path) -> None:
 
     missed_cols = [col for col in columns if col not in existing_cols]
     if missed_cols:
-        raise RuntimeError(f"There are missing columns:\n{missed_cols}\nin data source:\n{data}")
+        raise RuntimeError(f"Missing configured columns {missed_cols} in data source '{data}'.")
 
 
 def load_no_nan_data(ctx: TrainContext) -> pa.Table:

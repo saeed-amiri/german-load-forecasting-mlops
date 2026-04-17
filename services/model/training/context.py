@@ -54,7 +54,7 @@ class TrainContext:
         """
         model_cfg = cfg.train.models.get(model_name)
         if not model_cfg:
-            raise ValueError(f"Model {model_name} not found.")
+            raise ValueError(f"Unknown training model '{model_name}'.")
 
         if cfg.runtime is None:
             raise RuntimeError("Runtime configuration is not initialized.")

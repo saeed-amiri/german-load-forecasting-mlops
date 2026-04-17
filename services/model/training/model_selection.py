@@ -8,18 +8,18 @@ def resolve_model_name(config: PipelineConfig, model_name: str | None = None) ->
     if model_name is not None:
         if model_name not in config.train.models:
             available = ", ".join(sorted(config.train.models))
-            raise ValueError(f"Requested model '{model_name}' is unknown. Available models: {available}")
+            raise ValueError(f"Unknown training model '{model_name}'. Available models: {available}.")
         return model_name
 
     if config.train.default_model is not None:
         if config.train.default_model not in config.train.models:
             available = ", ".join(sorted(config.train.models))
             raise ValueError(
-                f"Configured default_model '{config.train.default_model}' is unknown. Available models: {available}"
+                f"Configured default_model '{config.train.default_model}' is unknown. Available models: {available}."
             )
         return config.train.default_model
 
     if not config.train.models:
-        raise ValueError("No models configured under train.models")
+        raise ValueError("No models configured under train.models.")
 
     return next(iter(config.train.models))
