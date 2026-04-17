@@ -9,8 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from configs.main import PipelineConfig
 from configs.config_trains import SqlConfig
+from configs.main import PipelineConfig
+
 
 @dataclass
 class TrainContext:
