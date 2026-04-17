@@ -1,12 +1,8 @@
-"""
-Model registry and constructors for training models.
-"""
-
-from typing import Any
+"""Model registry and constructors for training models."""
 
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
-from .model_types import RegressorModel
+from .model_types import ModelParams, RegressorModel
 
 MODEL_REGISTRY = {
     "gbr": GradientBoostingRegressor,
@@ -23,7 +19,7 @@ def get_model_class(model_id: str) -> type[RegressorModel]:
     return model_cls
 
 
-def build_model(model_id: str, params: dict[str, Any] | None = None) -> RegressorModel:
+def build_model(model_id: str, params: ModelParams | None = None) -> RegressorModel:
     """Construct estimator instance using registry model id and params."""
     model_cls = get_model_class(model_id)
     return model_cls(**(params or {}))

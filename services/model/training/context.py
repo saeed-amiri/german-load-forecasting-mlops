@@ -7,10 +7,11 @@ during tuning and final fit stages.
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from configs.config_trains import SqlConfig
 from configs.main import PipelineConfig
+
+from .model_types import ParamGrid
 
 
 @dataclass
@@ -33,7 +34,7 @@ class TrainContext:
     save_predictions: bool
     # ModelTrainingConfig: Model-specific training
     model_type: str
-    param_grid: dict[str, list[Any]]
+    param_grid: ParamGrid
     train_size: float
     # SavedFielConfig: Paths of files to be saved
     ofmt: str

@@ -27,7 +27,7 @@ from .tuning import find_best_params
 logger = logging.getLogger(__name__)
 
 
-def run_training(model_name: str | None = None):
+def run_training(model_name: str | None = None) -> None:
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
         raise RuntimeError("Runtime configuration is not initialized.")

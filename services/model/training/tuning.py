@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Any
+from typing import cast
 
 import joblib
 import pyarrow as pa
@@ -10,11 +10,12 @@ from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
 
 from .context import TrainContext
 from .model_factory import build_model
+from .model_types import ModelParams
 
 logger = logging.getLogger(__name__)
 
 
-def find_best_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) -> dict[str, Any]:
+def find_best_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) -> ModelParams:
     """Search and persist best estimator parameters for the selected model."""
     start_time = time.perf_counter()
 
@@ -31,7 +32,7 @@ def find_best_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) ->
     )
     searcher.fit(X_train, y_train)
 
-    best_params = searcher.best_params_
+    best_params = cast(ModelParams, searcher.best_params_)
     joblib.dump(best_params, ctx.best_params_file)
 
     duration = time.perf_counter() - start_time
