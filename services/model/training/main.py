@@ -10,23 +10,45 @@ steps:
 
 import logging
 from pathlib import Path
+from typing import Any
 
-import time
-import joblib
-import pyarrow as pa
 import adbc_driver_duckdb.dbapi as dbapi
-from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.model_selection import RandomizedSearchCV, TimeSeriesSplit
+import pyarrow as pa
 
 from configs.config_logs import resolve_service_log_path
-from configs.main import PipelineConfig, load_config
-from core.sql_helpers import render_sql_template
 from configs.config_sql import sql_script_path
+from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
+from core.sql_helpers import render_sql_template
 
 from .context import TrainContext
+from .evaluation import evaluate_regression
+from .model_factory import build_model
+from .tuning import find_best_params
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_model_name(config: PipelineConfig, model_name: str | None = None) -> str:
+    """Resolve selected model key from request override, config default, or first configured model."""
+    if model_name is not None:
+        if model_name not in config.train.models:
+            available = ", ".join(sorted(config.train.models))
+            raise ValueError(f"Requested model '{model_name}' is unknown. Available models: {available}")
+        return model_name
+
+    if config.train.default_model is not None:
+        if config.train.default_model not in config.train.models:
+            available = ", ".join(sorted(config.train.models))
+            raise ValueError(
+                f"Configured default_model '{config.train.default_model}' is unknown. Available models: {available}"
+            )
+        return config.train.default_model
+
+    if not config.train.models:
+        raise ValueError("No models configured under train.models")
+
+    return next(iter(config.train.models))
 
 
 def _check_exist(columns: list[str], cursor: dbapi.Cursor, data: Path) -> None:
@@ -91,52 +113,20 @@ def split_data(arrow_table: pa.Table, ctx: TrainContext) -> tuple[pa.Table, ...]
     return X_train_table, X_test_table, y_train_table, y_test_table
 
 
-def find_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) -> RandomizedSearchCV:
-    """
-    Find best parameters for the training and so on
-    """
-    start_time = time.perf_counter()
-
-    tscv = TimeSeriesSplit(n_splits=ctx.cv_folds)
-
-    base_model = GradientBoostingRegressor()
-
-    searcher = RandomizedSearchCV(
-        estimator=base_model,
-        param_distributions=ctx.param_grid,
-        cv=tscv,
-        scoring=ctx.scoring,
-        n_jobs=8,
-        verbose=1,
-    )
-
-    bst_est = searcher.fit(X_train, y_train)
-    
-    joblib.dump(bst_est, ctx.best_params_file)
-
-    duration = time.perf_counter() - start_time
-
-    logger.info(f"In {duration:.2f} secondes, computed best parameters: {bst_est}, Saved to {ctx.best_params_file}")
-
-    return bst_est
-
-
-def train_model(X_train, y_train, best_params):
+def train_model(X_train: pa.Table, y_train: pa.Table, best_params: dict[str, Any], ctx: TrainContext) -> Any:
     """
     train data based on the best parameters
     """
-    # TODO: Implement the logic for training the data → KAN-10
+    # TODO: Implement the logic for training the data → KAN-11
+
+    model = build_model(model_id=ctx.model_type, params=best_params)
+
+    model.fit(X_train, y_train)
+
+    return model
 
 
-def evaluate(model, X_test, y_test):
-    """
-    apply the evaluations test based on the requested one in config
-    It may be a whole module of itself!
-    """
-    # TODO: Implement the evaluations metrics → KAN-10
-
-
-def run_training():
+def run_training(model_name: str | None = None):
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
         raise RuntimeError("Runtime configuration is not initialized.")
@@ -146,20 +136,24 @@ def run_training():
 
     logger.info("Starting Training pipeline execution...")
 
-    ctx: TrainContext = TrainContext.from_config(model_name="gbc", cfg=config)
+    selected_model_name = _resolve_model_name(config=config, model_name=model_name)
+    logger.info("Selected model key for training: %s", selected_model_name)
+
+    ctx: TrainContext = TrainContext.from_config(model_name=selected_model_name, cfg=config)
 
     arrow_table: pa.Table = load_no_nan_data(ctx)
 
     X_train, X_test, y_train, y_test = split_data(arrow_table, ctx)
 
     # 3. Find params
-    best_params = find_params(X_train, y_train, ctx)
+    best_params = find_best_params(X_train, y_train, ctx)
 
     # 4. Train final model
-    # model = train_model(X_train, y_train, best_params)
+    model = train_model(X_train, y_train, best_params, ctx)
 
     # 5. Evaluate
-    # evaluate(model, X_test, y_test)
+    metrics = evaluate_regression(model, X_test, y_test)
+    logger.info("Evaluation metrics: %s", metrics)
 
 
 if __name__ == "__main__":
