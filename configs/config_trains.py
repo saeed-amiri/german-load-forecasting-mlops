@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class DatabaseMapping(BaseModel):
@@ -51,7 +51,11 @@ class ModelTrainingConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    type: str
+    model_id: str = Field(
+        validation_alias=AliasChoices("model_id", "type"),
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
+    model_tag: str | None = None
     param_grid: dict[str, list[Any]] = Field(default_factory=dict)
     train_size: float = Field(gt=0.0, le=1.0)
     evaluation_override: ModelEvaluationOverride | None = None
@@ -91,9 +95,13 @@ class SqlConfig(BaseModel):
 class SavedFileConfig(BaseModel):
     """Name of the output files"""
 
-    best_params: str
-    predictions: str
     ofmt: str
+    model_subdir: str = "models"
+    params_subdir: str = "best_params"
+    model_name_template: str = "{model_key}__{model_id}__{run_id}"
+    params_name_template: str = "{model_key}__best_params__{run_id}"
+    params_latest_pointer: str = "latest.json"
+    predictions: str = "predictions"
 
 
 class TrainingConfig(BaseModel):
@@ -105,4 +113,6 @@ class TrainingConfig(BaseModel):
     ofiles: SavedFileConfig
     evaluation: EvaluationConfig
     sql: SqlConfig = Field(default_factory=SqlConfig)
+    default_model: str | None = None
+    use_saved_best_params: bool = False
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)
