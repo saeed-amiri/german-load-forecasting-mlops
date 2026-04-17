@@ -95,7 +95,7 @@ class TrainContext:
 
         return cls(
             model_name=model_name,
-            model_type=model_cfg.type,
+            model_type=model_cfg.model_id,
             dataset=dataset,
             target_column=cfg.train.common.target_column,
             train_columns=cfg.train.common.train_columns,

@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class DatabaseMapping(BaseModel):
@@ -51,7 +51,10 @@ class ModelTrainingConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    type: str
+    model_id: str = Field(
+        validation_alias=AliasChoices("model_id", "type"),
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
     param_grid: dict[str, list[Any]] = Field(default_factory=dict)
     train_size: float = Field(gt=0.0, le=1.0)
     evaluation_override: ModelEvaluationOverride | None = None
