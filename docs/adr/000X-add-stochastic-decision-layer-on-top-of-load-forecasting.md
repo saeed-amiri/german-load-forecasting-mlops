@@ -1,4 +1,4 @@
-# ADR-0003: Add Stochastic Decision Layer on Top of Load Forecasting
+# ADR-000X: Add Stochastic Decision Layer on Top of Load Forecasting
 
 - Status: Proposed
 - Date: 2026-04-17
