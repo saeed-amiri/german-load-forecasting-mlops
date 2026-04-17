@@ -38,6 +38,7 @@ evaluation:
   save_predictions: true
 
 default_model: gbr
+use_saved_best_params: false
 
 
 models:

@@ -113,4 +113,5 @@ class TrainingConfig(BaseModel):
     evaluation: EvaluationConfig
     sql: SqlConfig = Field(default_factory=SqlConfig)
     default_model: str | None = None
+    use_saved_best_params: bool = False
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)

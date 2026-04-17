@@ -18,17 +18,17 @@ from configs.config_logs import resolve_service_log_path
 from configs.main import PipelineConfig, load_config
 from core.log_utils import setup_logging
 
+from .best_params import resolve_best_params
 from .context import TrainContext
 from .data_io import load_no_nan_data, split_data
 from .evaluation import evaluate_regression
 from .model_selection import resolve_model_name
 from .trainer import train_model
-from .tuning import find_best_params
 
 logger = logging.getLogger(__name__)
 
 
-def run_training(model_name: str | None = None) -> None:
+def run_training(model_name: str | None = None, use_saved_best_params: bool | None = None) -> None:
     config: PipelineConfig = load_config(config_name="config", start_file=Path(__file__))
     if config.runtime is None:
         raise RuntimeError("Runtime configuration is not initialized.")
@@ -47,8 +47,11 @@ def run_training(model_name: str | None = None) -> None:
 
     X_train, X_test, y_train, y_test = split_data(arrow_table, ctx)
 
-    # 3. Find params
-    best_params = find_best_params(X_train, y_train, ctx)
+    reuse_params = config.train.use_saved_best_params if use_saved_best_params is None else use_saved_best_params
+    logger.info("Best-params strategy: %s", "reuse_saved_or_search" if reuse_params else "search")
+
+    # 3. Resolve best params (load saved if requested; otherwise search)
+    best_params = resolve_best_params(X_train, y_train, ctx, use_saved_best_params=reuse_params)
 
     # 4. Train final model
     model = train_model(X_train, y_train, best_params, ctx)
