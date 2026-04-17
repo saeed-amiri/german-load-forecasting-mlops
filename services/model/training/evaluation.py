@@ -1,12 +1,12 @@
 """Evaluation routines for training service."""
 
-from typing import Any
-
 import pyarrow as pa
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 
+from .model_types import RegressorModel
 
-def evaluate_regression(model: Any, X_test: pa.Table, y_test: pa.Table) -> dict[str, float]:
+
+def evaluate_regression(model: RegressorModel, X_test: pa.Table, y_test: pa.Array) -> dict[str, float]:
     """Return baseline regression metrics for a fitted model."""
     prediction = model.predict(X_test)
 

@@ -6,13 +6,15 @@ from typing import Any
 
 from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
+from .model_types import RegressorModel
+
 MODEL_REGISTRY = {
     "gbr": GradientBoostingRegressor,
     "rfr": RandomForestRegressor,
 }
 
 
-def get_model_class(model_id: str):
+def get_model_class(model_id: str) -> type[RegressorModel]:
     """Return estimator class for a configured model identifier."""
     model_cls = MODEL_REGISTRY.get(model_id)
     if model_cls is None:
@@ -21,7 +23,7 @@ def get_model_class(model_id: str):
     return model_cls
 
 
-def build_model(model_id: str, params: dict[str, Any] | None = None):
+def build_model(model_id: str, params: dict[str, Any] | None = None) -> RegressorModel:
     """Construct estimator instance using registry model id and params."""
     model_cls = get_model_class(model_id)
     return model_cls(**(params or {}))
