@@ -100,6 +100,7 @@ class SavedFileConfig(BaseModel):
     params_subdir: str = "best_params"
     model_name_template: str = "{model_key}__{model_id}__{run_id}"
     params_name_template: str = "{model_key}__best_params__{run_id}"
+    params_latest_pointer: str = "latest.json"
     predictions: str = "predictions"
 
 

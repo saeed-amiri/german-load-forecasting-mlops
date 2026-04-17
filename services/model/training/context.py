@@ -42,6 +42,7 @@ class TrainContext:
     ofmt: str
     model_output_dir: Path
     params_output_dir: Path
+    params_latest_pointer_file: Path
     model_file: Path
     best_params_file: Path
     predictions_file: Path
@@ -84,6 +85,7 @@ class TrainContext:
 
         model_file: Path = model_output_dir / f"{model_stem}.{cfg.train.ofiles.ofmt}"
         best_params_file: Path = params_output_dir / f"{params_stem}.{cfg.train.ofiles.ofmt}"
+        params_latest_pointer_file: Path = params_output_dir / cfg.train.ofiles.params_latest_pointer
         predictions_file: Path = output_dir / f"{cfg.train.ofiles.predictions}.{cfg.train.ofiles.ofmt}"
 
         dataset_name = Path(cfg.train.common.database.name)
@@ -133,6 +135,7 @@ class TrainContext:
             ofmt=cfg.train.ofiles.ofmt,
             model_output_dir=model_output_dir,
             params_output_dir=params_output_dir,
+            params_latest_pointer_file=params_latest_pointer_file,
             model_file=model_file,
             best_params_file=best_params_file,
             predictions_file=predictions_file,

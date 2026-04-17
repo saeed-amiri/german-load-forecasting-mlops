@@ -19,6 +19,7 @@ ofiles:
   params_subdir: best_params
   model_name_template: "{model_tag}__{model_id}__{run_id}"
   params_name_template: "{model_tag}__best_params__{run_id}"
+  params_latest_pointer: latest.json
   predictions: predictions
 
 
