@@ -108,4 +108,5 @@ class TrainingConfig(BaseModel):
     ofiles: SavedFileConfig
     evaluation: EvaluationConfig
     sql: SqlConfig = Field(default_factory=SqlConfig)
+    default_model: str | None = None
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)
