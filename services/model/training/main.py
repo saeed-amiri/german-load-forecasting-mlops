@@ -11,6 +11,7 @@ steps:
 import logging
 from pathlib import Path
 
+import joblib
 import pyarrow as pa
 
 from configs.config_logs import resolve_service_log_path
@@ -51,6 +52,9 @@ def run_training(model_name: str | None = None) -> None:
 
     # 4. Train final model
     model = train_model(X_train, y_train, best_params, ctx)
+    joblib.dump(model, ctx.model_file)
+    logger.info("Saved trained model to %s", ctx.model_file)
+    logger.info("Best params stored at %s", ctx.best_params_file)
 
     # 5. Evaluate
     metrics = evaluate_regression(model, X_test, y_test)

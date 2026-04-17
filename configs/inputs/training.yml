@@ -15,7 +15,10 @@ common:
 
 ofiles:
   ofmt: joblib
-  best_params: best_params
+  model_subdir: models
+  params_subdir: best_params
+  model_name_template: "{model_tag}__{model_id}__{run_id}"
+  params_name_template: "{model_tag}__best_params__{run_id}"
   predictions: predictions
 
 
@@ -40,6 +43,7 @@ default_model: gbr
 models:
   gbr:
     model_id: gbr
+    model_tag: baseline_gbr
     param_grid:
       n_estimators: [200, 500]
       max_depth: [5, 8]
@@ -52,6 +56,7 @@ models:
         - rmse
   rfr:
     model_id: rfr
+    model_tag: baseline_rfr
     param_grid:
       n_estimators: [200, 500]
       max_depth: [8, 12]

@@ -55,6 +55,7 @@ class ModelTrainingConfig(BaseModel):
         validation_alias=AliasChoices("model_id", "type"),
         pattern=r"^[a-z][a-z0-9_]*$",
     )
+    model_tag: str | None = None
     param_grid: dict[str, list[Any]] = Field(default_factory=dict)
     train_size: float = Field(gt=0.0, le=1.0)
     evaluation_override: ModelEvaluationOverride | None = None
@@ -94,9 +95,12 @@ class SqlConfig(BaseModel):
 class SavedFileConfig(BaseModel):
     """Name of the output files"""
 
-    best_params: str
-    predictions: str
     ofmt: str
+    model_subdir: str = "models"
+    params_subdir: str = "best_params"
+    model_name_template: str = "{model_key}__{model_id}__{run_id}"
+    params_name_template: str = "{model_key}__best_params__{run_id}"
+    predictions: str = "predictions"
 
 
 class TrainingConfig(BaseModel):
