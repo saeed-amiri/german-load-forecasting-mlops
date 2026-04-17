@@ -4,10 +4,11 @@ Model registry and constructors for training models.
 
 from typing import Any
 
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
 
 MODEL_REGISTRY = {
     "gbr": GradientBoostingRegressor,
+    "rfr": RandomForestRegressor,
 }
 
 

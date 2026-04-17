@@ -48,3 +48,15 @@ models:
       metrics:
         - mae
         - rmse
+  rfr:
+    model_id: rfr
+    param_grid:
+      n_estimators: [200, 500]
+      max_depth: [8, 12]
+      min_samples_split: [2, 5]
+      min_samples_leaf: [1, 2]
+    train_size: 0.8
+    evaluation_override:
+      metrics:
+        - mae
+        - rmse
