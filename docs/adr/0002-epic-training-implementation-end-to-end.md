@@ -47,3 +47,65 @@ Will start with a **simple linear regression** model for initial implementation 
 - [ ] Add new sources of data to the training pipeline as needed.
 - [ ] Extend the training workflow to support additional models and algorithms.
 - [ ] Continuously monitor and optimize the training workflow for performance and reliability.
+
+
+# One moment on system design:
+
+## Plan: Training-Selector Architecture for MLOps
+
+Recommended direction: use a hybrid control plane.  
+1. Config is the default behavior.  
+2. API or runtime request can override mode/model safely.  
+3. Matrix experiments run only when explicitly requested.  
+4. Selector (tuner) is separate from trainer.  
+5. Full local artifact versioning is required now, MLflow is added as an extra tracking layer.  
+  
+## Core design questions answered  
+  
+### Should selector be separate from training?  
+Yes. Best practice is:  
+1. Orchestrator decides flow.  
+2. Selector finds best params.  
+3. Trainer fits final model.  
+4. Evaluator computes metrics.  
+5. Artifact manager persists outputs.  
+This separation keeps code testable and lets you replace selector later (for example RandomizedSearchCV to Optuna) without breaking training.  
+  
+### How should model choice work?  
+Use a layered precedence:  
+1. Explicit request model/params (from API/frontend).  
+2. Pinned previous run params.  
+3. Latest successful best params.  
+4. Config defaults.  
+This gives flexibility while preserving reproducibility.  
+  
+### Config-only or DAG/modeling logic?  
+Use both, with clear boundaries:  
+1. Config defines defaults and allowed model/search spaces.  
+2. Runtime request chooses mode and optional overrides.  
+3. Orchestrator enforces precedence and validation.  
+4. DAG/CLI/API call the same training entrypoint payload.  
+This avoids duplicated logic across interfaces.  
+  
+## Main questions to ask for ML system design  
+1. What exact prediction target and business decision does the model support?  
+2. What is the offline metric and what business KPI must improve?  
+3. What failure is worse: false positive or false negative style errors in your domain?  
+4. What data window and retraining cadence are required?  
+5. What drift signals will trigger retraining?  
+6. What is the rollback strategy if a new model underperforms?  
+7. What artifacts must be reproducible for audit: data slice, params, code version, model binary, metrics?  
+8. How will online/inference behavior match training feature logic?  
+9. What latency and throughput limits exist for inference?  
+10. Who approves model promotion to production?  
+  
+## Measures for ML design quality  
+1. Reproducibility: same inputs produce same model/metrics.  
+2. Traceability: every model has run_id, params source, data fingerprint.  
+3. Modularity: selector/trainer/inference/artifacts are independently testable.  
+4. Extensibility: adding a new model type requires minimal changes.  
+5. Reliability: clear validation and failure messages at boundaries.  
+6. Observability: metrics, params, and artifacts are logged and queryable.  
+7. Operability: same training contract works for API, CLI, and DAG.  
+8. Governance readiness: artifact and metadata are versioned before MLflow registry rollout.  
+ 
