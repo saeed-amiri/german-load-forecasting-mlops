@@ -44,6 +44,14 @@ def run_training(model_name: str | None = None, use_saved_best_params: bool | No
     logger.info("Selected model key for training: %s", selected_model_name)
 
     ctx: TrainContext = TrainContext.from_config(model_name=selected_model_name, cfg=config)
+
+    if not ctx.dataset.exists():
+        raise FileNotFoundError(
+            "Training dataset not found at "
+            f"'{ctx.dataset}'. If running in Docker, mount your project data directory "
+            "as './data:/app/data' so processed artifacts are available."
+        )
+
     mlflow_run = MLflowRunManager(cfg=config, ctx=ctx)
 
     try:
