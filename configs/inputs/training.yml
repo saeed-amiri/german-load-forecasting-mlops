@@ -38,6 +38,18 @@ evaluation:
   scoring: neg_mean_absolute_error
   save_predictions: true
 
+mlflow:
+  enabled: true
+  tracking_mode: local
+  tracking_uri: null
+  dagshub_repo: null
+  experiment_name: german-load-forecasting
+  run_name_template: "{model_tag}__{run_id}"
+  artifact_path: training
+  log_model: true
+  register_model: false
+  registered_model_template: "german_load_forecasting_{model_name}"
+
 default_model: gbr
 use_saved_best_params: false
 
