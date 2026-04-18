@@ -13,6 +13,7 @@ from pathlib import Path
 
 import joblib
 import pyarrow as pa
+from mlflow.exceptions import MlflowException
 
 from configs.config_logs import resolve_service_log_path
 from configs.main import PipelineConfig, load_config
@@ -22,6 +23,7 @@ from .best_params import resolve_best_params
 from .context import TrainContext
 from .data_io import load_no_nan_data, split_data
 from .evaluation import evaluate_regression
+from .mlflow_tracking import MLflowRunManager
 from .model_selection import resolve_model_name
 from .trainer import train_model
 
@@ -42,26 +44,40 @@ def run_training(model_name: str | None = None, use_saved_best_params: bool | No
     logger.info("Selected model key for training: %s", selected_model_name)
 
     ctx: TrainContext = TrainContext.from_config(model_name=selected_model_name, cfg=config)
+    mlflow_run = MLflowRunManager(cfg=config, ctx=ctx)
 
-    arrow_table: pa.Table = load_no_nan_data(ctx)
+    try:
+        mlflow_run.start()
+        mlflow_run.log_inputs()
 
-    X_train, X_test, y_train, y_test = split_data(arrow_table, ctx)
+        arrow_table: pa.Table = load_no_nan_data(ctx)
 
-    reuse_params = config.train.use_saved_best_params if use_saved_best_params is None else use_saved_best_params
-    logger.info("Best-params strategy: %s", "reuse_saved_or_search" if reuse_params else "search")
+        X_train, X_test, y_train, y_test = split_data(arrow_table, ctx)
 
-    # 3. Resolve best params (load saved if requested; otherwise search)
-    best_params = resolve_best_params(X_train, y_train, ctx, use_saved_best_params=reuse_params)
+        reuse_params = config.train.use_saved_best_params if use_saved_best_params is None else use_saved_best_params
+        logger.info("Best-params strategy: %s", "reuse_saved_or_search" if reuse_params else "search")
 
-    # 4. Train final model
-    model = train_model(X_train, y_train, best_params, ctx)
-    joblib.dump(model, ctx.model_file)
-    logger.info("Saved trained model to %s", ctx.model_file)
-    logger.info("Best params stored at %s", ctx.best_params_file)
+        # 3. Resolve best params (load saved if requested; otherwise search)
+        best_params = resolve_best_params(X_train, y_train, ctx, use_saved_best_params=reuse_params)
+        mlflow_run.log_best_params(best_params)
 
-    # 5. Evaluate
-    metrics = evaluate_regression(model, X_test, y_test)
-    logger.info("Evaluation metrics: %s", metrics)
+        # 4. Train final model
+        model = train_model(X_train, y_train, best_params, ctx)
+        joblib.dump(model, ctx.model_file)
+        logger.info("Saved trained model to %s", ctx.model_file)
+        logger.info("Best params stored at %s", ctx.best_params_file)
+
+        # 5. Evaluate
+        metrics = evaluate_regression(model, X_test, y_test)
+        logger.info("Evaluation metrics: %s", metrics)
+        mlflow_run.log_metrics(metrics)
+        mlflow_run.log_artifact(ctx.best_params_file, f"{config.train.mlflow.artifact_path}/best_params")
+        mlflow_run.log_artifact(ctx.model_file, f"{config.train.mlflow.artifact_path}/artifacts")
+        mlflow_run.log_model(model)
+        mlflow_run.end(status="FINISHED")
+    except MlflowException as err:
+        mlflow_run.end(status="FAILED")
+        raise RuntimeError("Failed to run MLFlow") from err
 
 
 if __name__ == "__main__":
