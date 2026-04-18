@@ -29,3 +29,7 @@ services:
   cadvisor:
     ports:
       - "127.0.0.1:8081:8080"
+
+  mlflow:
+    ports:
+      - "127.0.0.1:${MLFLOW_PORT:-5001}:5000"
