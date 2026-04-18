@@ -8,6 +8,6 @@ WORKDIR /app
 COPY docker/training/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-COPY --chown=appuser:appuser services/model/training ./services/data/preprocessing
+COPY --chown=appuser:appuser services/model/training ./services/model/training
 
 USER appuser
