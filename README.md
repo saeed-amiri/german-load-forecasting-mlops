@@ -20,6 +20,7 @@ Energy systems require accurate short-term load forecasts and robust anomaly det
 - API-based prediction and data access layer
 - Monitoring-ready runtime stack with health/metrics visibility
 - Reproducible ML/data operations workflow
+- MLflow experiment tracking with optional DagsHub remote tracking
 
 ## Data Sources
 
@@ -59,6 +60,7 @@ Data sources -> Ingestion -> Preprocessing -> Feature/Marts -> API/Auth services
 - Data workflow: DVC + Python services
 - Infra/runtime: Docker, Docker Compose, Nginx
 - Monitoring: Prometheus, Alertmanager, Grafana, Node Exporter, cAdvisor
+- Experiment tracking: MLflow (local server or DagsHub-hosted tracking)
 - Quality tools: Ruff
 
 ## Repository Highlights
@@ -224,6 +226,49 @@ Base URL through gateway: http://localhost:8080
 - Airflow: http://localhost:8080/airflow/
 - Prometheus: http://localhost:8080/prometheus/
 - Grafana: http://localhost:8080/grafana/
+- MLflow: http://localhost:8080/mlflow/
+
+## MLflow Integration
+
+Training runs now log experiment metadata to MLflow from both CLI/manual runs and Airflow DAG runs.
+
+- Training entrypoint logs params, metrics, model artifact, and best-params artifact.
+- Airflow DAG `load_forecast_training_pipeline` runs ingestion -> preprocessing -> marts -> training.
+- Nginx exposes MLflow UI at `/mlflow/`.
+
+Primary files:
+
+- [configs/inputs/training.yml](configs/inputs/training.yml)
+- [services/model/training/main.py](services/model/training/main.py)
+- [services/model/training/mlflow_tracking.py](services/model/training/mlflow_tracking.py)
+- [airflow/dags/load_forecast_training_pipeline.py](airflow/dags/load_forecast_training_pipeline.py)
+- [deployment/nginx/nginx.conf](deployment/nginx/nginx.conf)
+
+### Local MLflow Server Mode
+
+Default `.env` values use local compose MLflow service:
+
+```bash
+MLFLOW_TRACKING_MODE=server
+MLFLOW_TRACKING_URI=http://mlflow:5000
+```
+
+Then bring up the platform and open:
+
+- http://localhost:8080/mlflow/
+
+### DagsHub Tracking Mode
+
+To push runs into DagsHub Experiments tab, configure:
+
+```bash
+MLFLOW_TRACKING_MODE=dagshub
+DAGSHUB_REPO=<owner>/<repo>
+MLFLOW_TRACKING_USERNAME=<dagshub_username>
+MLFLOW_TRACKING_PASSWORD=<dagshub_access_token>
+```
+
+When these vars are set, training runs use `https://dagshub.com/<owner>/<repo>.mlflow` as tracking URI and appear in the DagsHub Experiments UI.
 
 ## Auth Smoke Test
 
