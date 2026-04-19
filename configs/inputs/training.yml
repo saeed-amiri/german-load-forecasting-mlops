@@ -40,7 +40,7 @@ evaluation:
 
 mlflow:
   enabled: true
-  tracking_mode: local
+  tracking_mode: server
   tracking_uri: null
   dagshub_repo: null
   experiment_name: german-load-forecasting
