@@ -40,12 +40,14 @@ def find_best_params(X_train: pa.Table, y_train: pa.Table, ctx: TrainContext) ->
     searcher = RandomizedSearchCV(
         estimator=base_model,
         param_distributions=ctx.param_grid,
+        n_iter=4,
         cv=tscv,
         scoring=ctx.scoring,
-        n_jobs=8,
+        n_jobs=4,
         verbose=1,
     )
-    searcher.fit(X_train, y_train)
+    with joblib.parallel_backend("threading"):
+        searcher.fit(X_train, y_train)
 
     best_params = cast(ModelParams, searcher.best_params_)
     joblib.dump(best_params, ctx.best_params_file)

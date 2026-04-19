@@ -1,7 +1,7 @@
 # configs/config_trains.py
 """Typed schema for model training configuration."""
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
@@ -104,6 +104,23 @@ class SavedFileConfig(BaseModel):
     predictions: str = "predictions"
 
 
+class MLflowConfig(BaseModel):
+    """MLflow tracking settings for training runs."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enabled: bool = False
+    tracking_mode: Literal["local", "server", "dagshub"] = "local"
+    tracking_uri: str | None = None
+    dagshub_repo: str | None = None
+    experiment_name: str = "german-load-forecasting"
+    run_name_template: str = "{model_tag}__{run_id}"
+    artifact_path: str = "training"
+    log_model: bool = True
+    register_model: bool = False
+    registered_model_template: str = "german_load_forecasting_{model_name}"
+
+
 class TrainingConfig(BaseModel):
     """Top-level training configuration loaded from YAML."""
 
@@ -113,6 +130,7 @@ class TrainingConfig(BaseModel):
     ofiles: SavedFileConfig
     evaluation: EvaluationConfig
     sql: SqlConfig = Field(default_factory=SqlConfig)
+    mlflow: MLflowConfig = Field(default_factory=MLflowConfig)
     default_model: str | None = None
     use_saved_best_params: bool = False
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)

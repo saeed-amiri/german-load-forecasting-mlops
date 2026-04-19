@@ -67,14 +67,19 @@ stages:
 
   training:
     cmd: >
-      docker run --rm -pull=never
+      docker run --rm --pull=never
+      --env MLFLOW_TRACKING_MODE
+      --env MLFLOW_TRACKING_URI
+      --env DAGSHUB_REPO
+      --env MLFLOW_TRACKING_USERNAME
+      --env MLFLOW_TRACKING_PASSWORD
       --mount type=bind,src=$(pwd)/data,dst=/app/data,readonly
-      --mount type=bind,src=$(pwd)/model,dst=/app/model
+      --mount type=bind,src=$(pwd)/models,dst=/app/models
       load-forecast-training:{$IMAGE_TAG}
       python -m services.model.training.main
     deps:
       - data/processed/
-      - model/
+      - models/
       - docker/base/Dockerfile
       - docker/base/requirements.txt
       - docker/training/Dockerfile
@@ -83,7 +88,7 @@ stages:
       - configs/
       - core/
     outs:
-      - model/
+      - models/
     params:
       - IMAGE_TAG
 

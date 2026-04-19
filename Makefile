@@ -23,6 +23,7 @@ COMPOSE ?= docker compose
 
 SERVING_SERVICES := \
 	prometheus alertmanager node-exporter cadvisor grafana nginx \
+	mlflow \
 	airflow-postgres airflow-init airflow-webserver airflow-scheduler \
 	base api auth
 
@@ -213,6 +214,8 @@ airflow-check: ## Check Airflow containers and routes
 	else \
 		echo "Direct airflow port not exposed (this is expected if debug compose is not used)"; \
 	fi
+	@echo "Checking MLflow via nginx route"
+	@curl -fsS -I http://127.0.0.1:8080/mlflow/ >/dev/null && echo "Nginx MLflow route is reachable"
 
 airflow-reset-admin: check-airflow-admin-env ## Recreate Airflow admin user from .env
 	@echo "Resetting Airflow admin credentials from .env values"
