@@ -5,6 +5,8 @@ Each context bundles SQL templates and output location needed to transform a
 staging table into feature parquet for a source.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 

@@ -5,6 +5,8 @@ The context resolves per-model training parameters and output locations used
 during tuning and final fit stages.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path

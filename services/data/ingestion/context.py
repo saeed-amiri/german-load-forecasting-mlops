@@ -5,6 +5,8 @@ The context object resolves all per-source values needed by ingestion runtime,
 including raw input path, staging SQL template path, and target table names.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 
