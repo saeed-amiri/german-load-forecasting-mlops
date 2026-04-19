@@ -10,6 +10,7 @@ from typing import Any
 
 import mlflow
 import mlflow.sklearn
+from mlflow.exceptions import MlflowException
 
 from configs.main import PipelineConfig
 
@@ -134,7 +135,22 @@ class MLflowRunManager:
                 model_id=self.ctx.model_type,
             )
 
-        mlflow.sklearn.log_model(sk_model=model, artifact_path=artifact_path, **kwargs)
+        try:
+            mlflow.sklearn.log_model(sk_model=model, artifact_path=artifact_path, **kwargs)
+        except MlflowException as err:
+            # Some environments can have an MLflow client newer than the tracking server.
+            # In that case, model registry endpoints (e.g. /logged-models) may be unavailable.
+            # Keep the run successful by storing the serialized model artifact instead.
+            if "/logged-models" in str(err) and self.ctx.model_file.exists():
+                fallback_path = f"{self.cfg.train.mlflow.artifact_path}/model_file"
+                mlflow.log_artifact(str(self.ctx.model_file), artifact_path=fallback_path)
+                logger.warning(
+                    "Model registry endpoint is unavailable on tracking server; "
+                    "stored model file artifact at '%s' instead.",
+                    fallback_path,
+                )
+                return
+            raise
 
     def end(self, status: str = "FINISHED") -> None:
         if not self.enabled:
