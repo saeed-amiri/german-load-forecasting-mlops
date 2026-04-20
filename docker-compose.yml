@@ -340,6 +340,7 @@ services:
         - APP_GID=${APP_GID:-1000}
     image:
       load-forecast-base:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-base
     networks:
       - backend
 
@@ -351,6 +352,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-api
     depends_on:
       base:
         condition: service_completed_successfully
@@ -375,6 +377,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-auth:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-auth
     depends_on:
       base:
         condition: service_completed_successfully
@@ -400,6 +403,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-ingestion:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-ingestion
     depends_on:
       base:
         condition: service_completed_successfully
@@ -418,6 +422,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-preprocessing:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-preprocessing
     depends_on:
       ingestion:
         condition: service_completed_successfully
@@ -436,6 +441,7 @@ services:
         - BASE_IMAGE_TAG=${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-marts:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-marts
     depends_on:
       preprocessing:
         condition: service_completed_successfully
@@ -455,6 +461,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-training:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-training
     environment:
       - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://mlflow:5000}
       - MLFLOW_TRACKING_MODE=${MLFLOW_TRACKING_MODE:-server}
