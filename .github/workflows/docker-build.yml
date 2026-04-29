@@ -1,0 +1,40 @@
+# Build all Docker images for services on push/PR to main
+
+name: Docker Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-docker-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Base image
+        run: docker build -f docker/base/Dockerfile -t myorg/base:latest .
+
+      - name: Build API image
+        run: docker build -f docker/api/Dockerfile -t myorg/api:latest .
+
+      - name: Build Auth image
+        run: docker build -f docker/auth/Dockerfile -t myorg/auth:latest .
+
+      - name: Build Ingestion image
+        run: docker build -f docker/ingestion/Dockerfile -t myorg/ingestion:latest .
+
+      - name: Build Marts image
+        run: docker build -f docker/marts/Dockerfile -t myorg/marts:latest .
+
+      - name: Build Preprocessing image
+        run: docker build -f docker/preprocessing/Dockerfile -t myorg/preprocessing:latest .
+
+      - name: Build Training image
+        run: docker build -f docker/training/Dockerfile -t myorg/training:latest .
