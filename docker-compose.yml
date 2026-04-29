@@ -240,6 +240,7 @@ services:
       _AIRFLOW_ADMIN_PASSWORD: "${AIRFLOW_ADMIN_PASSWORD:-admin}"
       _AIRFLOW_ADMIN_EMAIL: "${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
     volumes:
+      - ./:/app
       - ./airflow/dags:/opt/airflow/dags
       - ./airflow/plugins:/opt/airflow/plugins
       - ./airflow/logs:/opt/airflow/logs
@@ -518,11 +519,36 @@ services:
 
 networks:
   backend:
+    name: german-load-forecasting-mlops_backend
+    driver: bridge
 
 volumes:
+  # Monitoring stack
   prometheus_data:
+    name: load-forecast-prometheus-data
   alertmanager_data:
+    name: load-forecast-alertmanager-data
   grafana-storage:
+    name: load-forecast-grafana-storage
+
+  # Orchestration
   airflow_pgdata:
+    name: load-forecast-airflow-pgdata
+  airflow_logs:
+    name: load-forecast-airflow-logs
+  airflow_dags:
+    name: load-forecast-airflow-dags
+
+  # ML Tracking
   mlflow_data:
-  
+    name: load-forecast-mlflow-data
+
+  # Cache and temp
+  dvc_cache:
+    name: load-forecast-dvc-cache
+  pip_cache:
+    name: load-forecast-pip-cache
+
+  # Feature store (if using)
+  feature_store:
+    name: load-forecast-feature-store
