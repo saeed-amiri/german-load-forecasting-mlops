@@ -1,34 +1,50 @@
+# Set up automated linting, testing, and build in CI
+# Add workflow to:
+# - run lint (e.g., ruff, flake8),
+# - unit tests (pytest),
+# Fail CI on lint/test errors.
+# Cache dependencies for faster runs.
+
 name: CI Pipeline
 
 on:
-    push:
-        branches: [ "main" ]
-    pull_request:
-        branches: [ "main" ]
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-    qulity-check:
-        runs-on: ubuntu-latest
-        steps:
-        - name: Checkout code
-          uses: actions/checkout@v4
-        
-        - name: Install uv
-          uses: astral-sh/setup-uv@v4
-          with:
-            enable-cache: true
+  qulity-check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-        - name: Set up Python
-          run: uv python install
-    
-        - name: Install dependencies
-          run: uv sync --all-extras --dev
-        
-        - name: Run Linter (Ruff)
-          run: uv run ruff check .
+    - name: Set up dependency cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml', '**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-
 
-        - name: Run Formatter Check (Ruff)
-          run: uv run ruff format --check .
-        
-        - name: Run tests
-          run: uv run pytest services/data/tests/ services/auth/tests/
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Set up Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: uv sync --all-extras --dev
+
+    - name: Run Linter (Ruff)
+      run: uv run ruff check .
+
+    - name: Run Formatter Check (Ruff)
+      run: uv run ruff format --check .
+
+    - name: Run tests
+      run: uv run pytest services/data/tests/ services/auth/tests/
