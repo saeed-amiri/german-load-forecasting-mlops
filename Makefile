@@ -24,7 +24,9 @@ COMPOSE ?= docker compose
 SERVING_SERVICES := \
 	prometheus alertmanager node-exporter cadvisor grafana nginx \
 	mlflow \
-	airflow-postgres airflow-init airflow-webserver airflow-scheduler \
+	airflow-postgres airflow-init airflow-api \
+	airflow-dag-processor airflow-triggerer \
+	airflow-scheduler \
 	base api auth
 
 define require_var
@@ -178,17 +180,17 @@ api-check: check-api-port ## Check API health and alert endpoint
 		-d '{"alerts":[]}'
 
 airflow-check: ## Check Airflow containers and routes
-	@echo "Checking Airflow webserver container health"
+	@echo "Checking Airflow api container health"
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
 		if $(COMPOSE) ps --format json | \
-			grep -q '"Service":"airflow-webserver".*"State":"running"'; then \
-			echo "Airflow webserver container is running"; \
+			grep -q '"Service":"airflow-api".*"State":"running"'; then \
+			echo "Airflow api container is running"; \
 			break; \
 		fi; \
-		echo "Waiting for airflow-webserver startup... ($$i/10)"; \
+		echo "Waiting for airflow-api startup... ($$i/10)"; \
 		sleep 2; \
 		if [ $$i -eq 10 ]; then \
-			echo "Airflow webserver is not running"; \
+			echo "Airflow api is not running"; \
 			exit 1; \
 		fi; \
 	done
@@ -221,9 +223,9 @@ airflow-reset-admin: check-airflow-admin-env ## Recreate Airflow admin user from
 	@echo "Resetting Airflow admin credentials from .env values"
 	@ROLE="$(AIRFLOW_ADMIN_ROLE)"; \
 	case "$$ROLE" in Admin|Viewer|User|Op|Public) ;; *) ROLE="Admin" ;; esac; \
-	$(COMPOSE) exec -T airflow-webserver airflow users delete \
+	$(COMPOSE) exec -T airflow-api airflow users delete \
 		--username "$(AIRFLOW_ADMIN_USERNAME)" >/dev/null 2>&1 || true; \
-	$(COMPOSE) exec -T airflow-webserver airflow users create \
+	$(COMPOSE) exec -T airflow-api airflow users create \
 		--role "$$ROLE" \
 		--username "$(AIRFLOW_ADMIN_USERNAME)" \
 		--password "$(AIRFLOW_ADMIN_PASSWORD)" \

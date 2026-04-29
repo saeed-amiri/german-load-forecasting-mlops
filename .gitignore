@@ -8,6 +8,8 @@ inspect_data.py
 playground.sql
 backend.py
 gateway.py
+issuer.sh
+issue.txt
 
 # Public repo cleanup
 airflow/logs/**

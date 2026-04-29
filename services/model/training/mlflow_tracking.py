@@ -127,7 +127,8 @@ class MLflowRunManager:
         if not self.enabled or not self.cfg.train.mlflow.log_model:
             return
 
-        artifact_path = f"{self.cfg.train.mlflow.artifact_path}/sklearn_model"
+        model_artifact_name = f"{self.cfg.train.mlflow.artifact_path}/sklearn_model"
+
         kwargs: dict[str, Any] = {}
         if self.cfg.train.mlflow.register_model:
             kwargs["registered_model_name"] = self.cfg.train.mlflow.registered_model_template.format(
@@ -136,7 +137,7 @@ class MLflowRunManager:
             )
 
         try:
-            mlflow.sklearn.log_model(sk_model=model, artifact_path=artifact_path, **kwargs)
+            mlflow.sklearn.log_model(sk_model=model, name=model_artifact_name, **kwargs)
         except MlflowException as err:
             # Some environments can have an MLflow client newer than the tracking server.
             # In that case, model registry endpoints (e.g. /logged-models) may be unavailable.
