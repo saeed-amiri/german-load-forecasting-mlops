@@ -1,11 +1,12 @@
-"""Airflow DAG for the end-to-end load forecasting training pipeline."""
+# airflow/dags/load_forecast_training_pipeline.py
+"""
+Airflow DAG for the end-to-end load forecasting training pipeline.
+"""
 
 from __future__ import annotations
 
-from datetime import datetime
-
-from airflow.models import Variable
-from airflow.operators.bash import BashOperator
+import pendulum
+from operators import BasePythonOperator
 
 from airflow import DAG
 
@@ -13,53 +14,38 @@ DEFAULT_ARGS = {
     "owner": "mlops",
     "depends_on_past": False,
     "retries": 1,
+    "retry_delay": pendulum.duration(minutes=5),
 }
-
-
-def _shared_env() -> dict[str, str]:
-    """Resolve MLflow and DagsHub env vars from Airflow Variables."""
-    return {
-        "PYTHONPATH": "/opt/project",
-        "MLFLOW_TRACKING_MODE": Variable.get("MLFLOW_TRACKING_MODE", default_var="server"),
-        "MLFLOW_TRACKING_URI": Variable.get("MLFLOW_TRACKING_URI", default_var="http://mlflow:5000"),
-        "DAGSHUB_REPO": Variable.get("DAGSHUB_REPO", default_var=""),
-        "MLFLOW_TRACKING_USERNAME": Variable.get("MLFLOW_TRACKING_USERNAME", default_var=""),
-        "MLFLOW_TRACKING_PASSWORD": Variable.get("MLFLOW_TRACKING_PASSWORD", default_var=""),
-    }
-
 
 with DAG(
     dag_id="load_forecast_training_pipeline",
     default_args=DEFAULT_ARGS,
     description="Runs ingestion -> preprocessing -> marts -> training with MLflow tracking",
-    start_date=datetime(2026, 1, 1),
-    schedule="@daily",
+    start_date=pendulum.datetime(2026, 4, 19, tz="UTC"),
+    schedule=None,  # Manual trigger
     catchup=False,
     max_active_runs=1,
     tags=["load-forecast", "mlops", "mlflow"],
 ) as dag:
-    ingestion = BashOperator(
+    ingestion = BasePythonOperator(
         task_id="ingestion",
-        bash_command="cd /opt/project && python -m services.data.ingestion.main",
-        env=_shared_env(),
+        python_module="services.data.ingestion.main",
     )
 
-    preprocessing = BashOperator(
+    preprocessing = BasePythonOperator(
         task_id="preprocessing",
-        bash_command="cd /opt/project && python -m services.data.preprocessing.main",
-        env=_shared_env(),
+        python_module="services.data.preprocessing.main",
     )
 
-    marts = BashOperator(
+    marts = BasePythonOperator(
         task_id="marts",
-        bash_command="cd /opt/project && python -m services.data.marts.main",
-        env=_shared_env(),
+        python_module="services.data.marts.main",
     )
 
-    training = BashOperator(
+    training = BasePythonOperator(
         task_id="training",
-        bash_command="cd /opt/project && python -m services.model.training.main",
-        env=_shared_env(),
+        python_module="services.model.training.main",
     )
 
+    # Clean, linear data-science pipeline. No DVC clutter.
     ingestion >> preprocessing >> marts >> training
