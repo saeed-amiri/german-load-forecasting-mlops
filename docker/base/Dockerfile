@@ -18,8 +18,11 @@ COPY configs ./configs
 COPY core ./core
 COPY sql ./sql
 
-ARG APP_UID=1000
-ARG APP_GID=1000
+ARG APP_UID=50000
+ARG APP_GID=0
+
+ENV PYTHONPATH="/app"
+ENV TZ=Europe/Berlin
 
 RUN groupadd --gid ${APP_GID} appuser \
   && useradd --uid ${APP_UID} --gid appuser --create-home appuser \
