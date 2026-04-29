@@ -1,4 +1,19 @@
 # docker-compose.yml
+x-airflow-common: &airflow-common
+  image: apache/airflow:3.2.1-python3.14
+  user: "${AIRFLOW_UID:-50000}:0"
+  group_add:
+    - "${DOCKER_GID}"
+  environment: &airflow-common-env 
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Berlin
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}"
+    TZ: Europe/Berlin
+  networks:
+    - backend
+  restart: unless-stopped
 
 services:
   # ------------------------------------
