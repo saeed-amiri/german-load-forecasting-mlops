@@ -1020,17 +1020,6 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-airflow = [
-    { name = "adbc-driver-manager" },
-    { name = "duckdb" },
-    { name = "jinja2" },
-    { name = "joblib" },
-    { name = "mlflow" },
-    { name = "pyarrow" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "scikit-learn" },
-]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
@@ -1062,17 +1051,6 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-airflow = [
-    { name = "adbc-driver-manager", specifier = ">=1.11.0" },
-    { name = "duckdb", specifier = ">=1.5.0" },
-    { name = "jinja2", specifier = ">=3.1.6" },
-    { name = "joblib", specifier = ">=1.5.3" },
-    { name = "mlflow", specifier = ">=3.10.1" },
-    { name = "pyarrow", specifier = ">=23.0.1" },
-    { name = "pydantic", specifier = ">=2.11.7" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "scikit-learn", specifier = ">=1.8.0" },
-]
 dev = [
     { name = "mypy", specifier = ">=1.19.1" },
     { name = "pytest", specifier = ">=9.0.2" },
