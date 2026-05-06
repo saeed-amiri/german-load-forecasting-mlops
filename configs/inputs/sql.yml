@@ -13,7 +13,7 @@ sources:
       - raw: DE_load_actual_entsoe_transparency
         clean: load_actual
       - raw: DE_load_forecast_entsoe_transparency
-        clean: load_forecast
+        clean: alien_forecast
       - raw: DE_solar_generation_actual
         clean: solar_actual
       - raw: DE_wind_generation_actual

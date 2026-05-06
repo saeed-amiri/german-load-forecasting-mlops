@@ -1,9 +1,9 @@
 # configs/config_trains.py
 """Typed schema for model training configuration."""
 
-from typing import Any
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
 class DatabaseMapping(BaseModel):
@@ -22,7 +22,6 @@ class CommonConfig(BaseModel):
     database: DatabaseMapping
     target_column: str
     train_columns: list[str] = Field(default_factory=list)
-    drop_columns: list[str] = Field(default_factory=list)
 
 
 class EvaluationConfig(BaseModel):
@@ -52,10 +51,74 @@ class ModelTrainingConfig(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    type: str
+    model_id: str = Field(
+        validation_alias=AliasChoices("model_id", "type"),
+        pattern=r"^[a-z][a-z0-9_]*$",
+    )
+    model_tag: str | None = None
     param_grid: dict[str, list[Any]] = Field(default_factory=dict)
     train_size: float = Field(gt=0.0, le=1.0)
     evaluation_override: ModelEvaluationOverride | None = None
+
+
+class TableNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SQLNames(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    def __getattr__(self, item):
+        data = self.model_dump()
+        try:
+            return data[item]
+        except KeyError:
+            raise AttributeError(item)
+
+
+class SqlConfig(BaseModel):
+    """File and Table names"""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    tables: TableNames = Field(default_factory=TableNames)
+    files: SQLNames = Field(default_factory=SQLNames)
+
+
+class SavedFileConfig(BaseModel):
+    """Name of the output files"""
+
+    ofmt: str
+    model_subdir: str = "models"
+    params_subdir: str = "best_params"
+    model_name_template: str = "{model_key}__{model_id}__{run_id}"
+    params_name_template: str = "{model_key}__best_params__{run_id}"
+    params_latest_pointer: str = "latest.json"
+    predictions: str = "predictions"
+
+
+class MLflowConfig(BaseModel):
+    """MLflow tracking settings for training runs."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    enabled: bool = False
+    tracking_mode: Literal["local", "server", "dagshub"] = "local"
+    tracking_uri: str | None = None
+    dagshub_repo: str | None = None
+    experiment_name: str = "german-load-forecasting"
+    run_name_template: str = "{model_tag}__{run_id}"
+    artifact_path: str = "training"
+    log_model: bool = True
+    register_model: bool = False
+    registered_model_template: str = "german_load_forecasting_{model_name}"
 
 
 class TrainingConfig(BaseModel):
@@ -64,5 +127,10 @@ class TrainingConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     common: CommonConfig
+    ofiles: SavedFileConfig
     evaluation: EvaluationConfig
+    sql: SqlConfig = Field(default_factory=SqlConfig)
+    mlflow: MLflowConfig = Field(default_factory=MLflowConfig)
+    default_model: str | None = None
+    use_saved_best_params: bool = False
     models: dict[str, ModelTrainingConfig] = Field(default_factory=dict)

@@ -20,6 +20,7 @@ Energy systems require accurate short-term load forecasts and robust anomaly det
 - API-based prediction and data access layer
 - Monitoring-ready runtime stack with health/metrics visibility
 - Reproducible ML/data operations workflow
+- MLflow experiment tracking with optional DagsHub remote tracking
 
 ## Data Sources
 
@@ -41,15 +42,23 @@ Current raw-to-clean mapping is defined in configs/inputs/sql.yml under sources.
 
 ## Architecture Overview
 
-```text
-Data sources -> Ingestion -> Preprocessing -> Feature/Marts -> API/Auth services
-                  |                                          |
-                  v                                          v
-               Airflow orchestration                  Nginx gateway/routing
-                                                               |
-                                                               v
-                                     Prometheus + Alertmanager + Grafana
-```
+<details>
+  <summary>Conceptual Architecture</summary>
+  <br>
+  <img src="reports/conceptual_architecture.png" width="600">
+</details>
+
+<details>
+  <summary>Request Flow</summary>
+  <br>
+  <img src="reports/request_flow.png" width="600">
+</details>
+
+<details>
+  <summary>Deployment Architecture</summary>
+  <br>
+  <img src="reports/deployment_architecture.png" width="600">
+</details>
 
 ## Tech Stack
 
@@ -59,6 +68,7 @@ Data sources -> Ingestion -> Preprocessing -> Feature/Marts -> API/Auth services
 - Data workflow: DVC + Python services
 - Infra/runtime: Docker, Docker Compose, Nginx
 - Monitoring: Prometheus, Alertmanager, Grafana, Node Exporter, cAdvisor
+- Experiment tracking: MLflow (local server or DagsHub-hosted tracking)
 - Quality tools: Ruff
 
 ## Repository Highlights
@@ -224,6 +234,49 @@ Base URL through gateway: http://localhost:8080
 - Airflow: http://localhost:8080/airflow/
 - Prometheus: http://localhost:8080/prometheus/
 - Grafana: http://localhost:8080/grafana/
+- MLflow: http://localhost:8080/mlflow/
+
+## MLflow Integration
+
+Training runs now log experiment metadata to MLflow from both CLI/manual runs and Airflow DAG runs.
+
+- Training entrypoint logs params, metrics, model artifact, and best-params artifact.
+- Airflow DAG `load_forecast_training_pipeline` runs ingestion -> preprocessing -> marts -> training.
+- Nginx exposes MLflow UI at `/mlflow/`.
+
+Primary files:
+
+- [configs/inputs/training.yml](configs/inputs/training.yml)
+- [services/model/training/main.py](services/model/training/main.py)
+- [services/model/training/mlflow_tracking.py](services/model/training/mlflow_tracking.py)
+- [airflow/dags/load_forecast_training_pipeline.py](airflow/dags/load_forecast_training_pipeline.py)
+- [deployment/nginx/nginx.conf](deployment/nginx/nginx.conf)
+
+### Local MLflow Server Mode
+
+Default `.env` values use local compose MLflow service:
+
+```bash
+MLFLOW_TRACKING_MODE=server
+MLFLOW_TRACKING_URI=http://mlflow:5000
+```
+
+Then bring up the platform and open:
+
+- http://localhost:8080/mlflow/
+
+### DagsHub Tracking Mode
+
+To push runs into DagsHub Experiments tab, configure:
+
+```bash
+MLFLOW_TRACKING_MODE=dagshub
+DAGSHUB_REPO=<owner>/<repo>
+MLFLOW_TRACKING_USERNAME=<dagshub_username>
+MLFLOW_TRACKING_PASSWORD=<dagshub_access_token>
+```
+
+When these vars are set, training runs use `https://dagshub.com/<owner>/<repo>.mlflow` as tracking URI and appear in the DagsHub Experiments UI.
 
 ## Auth Smoke Test
 
@@ -239,6 +292,101 @@ TOKEN=$(curl -fsS -X POST http://localhost:8080/auth/login \
 curl -fsS http://localhost:8080/auth/protected \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+## Training Model Artifacts and Best Params
+
+This project stores training artifacts locally with explicit separation by artifact type and model key.
+
+- Model files are stored under models root in a model subfolder.
+- Best-params files are stored under models root in a params subfolder.
+- Each model has its own params folder, so loading cannot mix files between models.
+- File names are template-driven from training configuration.
+
+Relevant configuration files:
+
+- [configs/inputs/training.yml](configs/inputs/training.yml)
+- [configs/config_trains.py](configs/config_trains.py)
+- [services/model/training/context.py](services/model/training/context.py)
+- [services/model/training/best_params.py](services/model/training/best_params.py)
+- [services/model/training/tuning.py](services/model/training/tuning.py)
+
+### Output Naming Configuration
+
+Example structure in [configs/inputs/training.yml](configs/inputs/training.yml):
+
+    ofiles:
+      ofmt: joblib
+      model_subdir: models
+      params_subdir: best_params
+      model_name_template: "{model_tag}__{model_id}__{run_id}"
+      params_name_template: "{model_tag}__best_params__{run_id}"
+      params_latest_pointer: latest.json
+      predictions: predictions
+
+Model-specific naming tag is optional and can be set per model:
+
+    models:
+      gbr:
+        model_id: gbr
+        model_tag: baseline_gbr
+      rfr:
+        model_id: rfr
+        model_tag: baseline_rfr
+
+### Local Folder Layout
+
+With models_dir from [configs/inputs/paths.yml](configs/inputs/paths.yml), the layout is:
+
+    models/
+      models/
+        gbr/
+          baseline_gbr__gbr__20260417T153210Z.joblib
+      best_params/
+        gbr/
+          baseline_gbr__best_params__20260417T153210Z.joblib
+          latest.json
+
+The latest pointer file sleeps in each model-specific params folder:
+
+- models/best_params/gbr/latest.json
+- models/best_params/rfr/latest.json
+
+### Best Params Load Strategy
+
+When use_saved_best_params is true:
+
+1. Training selects model key first.
+2. It looks in that model params folder only.
+3. It tries to read params_latest_pointer first.
+4. If pointer is invalid or missing, it falls back to newest params file by modification time.
+5. If no params file exists, it runs hyperparameter search and saves a new params file.
+
+When use_saved_best_params is false:
+
+1. Training always runs hyperparameter search.
+2. A new params file is saved.
+3. The latest pointer file is updated.
+
+### Example latest.json
+
+Example contents for models/best_params/gbr/latest.json:
+
+    {
+      "run_id": "20260417T153210Z",
+      "model_name": "gbr",
+      "file_name": "baseline_gbr__best_params__20260417T153210Z.joblib",
+      "updated_at": "2026-04-17T15:32:11.441280+00:00"
+    }
+
+This makes best-params reuse deterministic and independent of filename parsing.
+
+### Runtime Toggle
+
+Default behavior comes from [configs/inputs/training.yml](configs/inputs/training.yml):
+
+    use_saved_best_params: false
+
+It can also be overridden at runtime in training entrypoint logic in [services/model/training/main.py](services/model/training/main.py).
 
 ## Project Status
 

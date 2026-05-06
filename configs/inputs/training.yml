@@ -6,9 +6,28 @@ common:
   train_columns:
     - solar_actual
     - wind_actual
+    - wind_onshore
     - wind_offshore
-  drop_columns:
-    - load_forecast
+    - hour_of_day
+    - day_of_week
+    - load_actual_lag_1
+    - load_actual_lag_24
+
+ofiles:
+  ofmt: joblib
+  model_subdir: models
+  params_subdir: best_params
+  model_name_template: "{model_tag}__{model_id}__{run_id}"
+  params_name_template: "{model_tag}__best_params__{run_id}"
+  params_latest_pointer: latest.json
+  predictions: predictions
+
+
+sql:
+  files:
+    load: load_processed_data.sql
+  tables:
+    load: placeholder
 
 
 evaluation:
@@ -19,15 +38,44 @@ evaluation:
   scoring: neg_mean_absolute_error
   save_predictions: true
 
+mlflow:
+  enabled: true
+  tracking_mode: server
+  tracking_uri: null
+  dagshub_repo: null
+  experiment_name: german-load-forecasting
+  run_name_template: "{model_tag}__{run_id}"
+  artifact_path: training
+  log_model: true
+  register_model: false
+  registered_model_template: "german_load_forecasting_{model_name}"
+
+default_model: gbr
+use_saved_best_params: false
+
 
 models:
-  gbc:
-    type: GradientBoostingClassifier
+  gbr:
+    model_id: gbr
+    model_tag: baseline_gbr
     param_grid:
       n_estimators: [200, 500]
       max_depth: [5, 8]
       min_samples_split: [5, 10]
       learning_rate: [0.01, 0.05]
+    train_size: 0.8
+    evaluation_override:
+      metrics:
+        - mae
+        - rmse
+  rfr:
+    model_id: rfr
+    model_tag: baseline_rfr
+    param_grid:
+      n_estimators: [200, 500]
+      max_depth: [8, 12]
+      min_samples_split: [2, 5]
+      min_samples_leaf: [1, 2]
     train_size: 0.8
     evaluation_override:
       metrics:

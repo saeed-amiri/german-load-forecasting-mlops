@@ -1,4 +1,19 @@
 # docker-compose.yml
+x-airflow-common: &airflow-common
+  image: apache/airflow:3.2.1-python3.14
+  user: "${AIRFLOW_UID:-50000}:0"
+  group_add:
+    - "${DOCKER_GID}"
+  environment: &airflow-common-env 
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Berlin
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}"
+    TZ: Europe/Berlin
+  networks:
+    - backend
+  restart: unless-stopped
 
 services:
   # ------------------------------------
@@ -128,6 +143,34 @@ services:
       - backend
     restart: unless-stopped
 
+  # MLflow tracking server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.15.1
+    container_name: load-forecast-mlflow
+    command:
+      - "mlflow"
+      - "server"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "5000"
+      - "--backend-store-uri"
+      - "sqlite:////mlflow/mlflow.db"
+      - "--artifacts-destination"
+      - "/mlflow/artifacts"
+      - "--serve-artifacts"
+    volumes:
+      - mlflow_data:/mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health', timeout=3)"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 20s
+    networks:
+      - backend
+    restart: unless-stopped
+
 
   # ------------------------------------
   # NGinX: Reverse Proxy & Load Balancing
@@ -155,7 +198,6 @@ services:
   # ------------------------------------
   # Orchestration: Airflow
   # ------------------------------------
-
   # Airflow metadata database
   airflow-postgres:
     image: postgres:15
@@ -182,102 +224,151 @@ services:
 
   # One-time DB migrations and admin user setup
   airflow-init:
-    image: apache/airflow:2.9.3
+    <<: *airflow-common
     container_name: load-forecast-airflow-init
     depends_on:
       airflow-postgres:
         condition: service_healthy
-    user: "0:0"
     environment:
-      - AIRFLOW_UID=${AIRFLOW_UID:-50000}
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
+      <<: *airflow-common-env
+      AIRFLOW_GID: "${AIRFLOW_GID}"
+      AIRFLOW_UID: "${AIRFLOW_UID:-50000}"
+      AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Berlin
+      MLFLOW_EXPERIMENT_NAME: "${MLFLOW_EXPERIMENT_NAME}"
+      MLFLOW_TRACKING_MODE: "${MLFLOW_TRACKING_MODE}"
+      _AIRFLOW_ADMIN_USERNAME: "${AIRFLOW_ADMIN_USERNAME:-admin}"
+      _AIRFLOW_ADMIN_PASSWORD: "${AIRFLOW_ADMIN_PASSWORD:-admin}"
+      _AIRFLOW_ADMIN_EMAIL: "${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
     volumes:
+      - ./:/app
       - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/logs:/opt/airflow/logs
+    # Runs migrations then creates admin user -- exits 0 so dependents can start
     command:
       - bash
       - -c
       - |
-        set -e
-        airflow db migrate
-        airflow users delete --username "${AIRFLOW_ADMIN_USERNAME:-admin}" || true
-        airflow users create --role "${AIRFLOW_ADMIN_ROLE:-Admin}" --username "${AIRFLOW_ADMIN_USERNAME:-admin}" --password "${AIRFLOW_ADMIN_PASSWORD:-admin}" --firstname "${AIRFLOW_ADMIN_FIRSTNAME:-Admin}" --lastname "${AIRFLOW_ADMIN_LASTNAME:-User}" --email "${AIRFLOW_ADMIN_EMAIL:-admin@example.com}"
-        chown -R ${AIRFLOW_UID:-50000}:0 /opt/airflow/logs /opt/airflow/dags /opt/airflow/plugins
-    networks:
-      - backend
+        airflow db migrate && \
+        airflow users create \
+          --username "$${_AIRFLOW_ADMIN_USERNAME}" \
+          --password "$${_AIRFLOW_ADMIN_PASSWORD}" \
+          --firstname Admin \
+          --lastname   User \
+          --email      "$${_AIRFLOW_ADMIN_EMAIL}" \
+          --role       Admin \
+        || echo "Admin user already exists, skipping."
+    restart: "no"
 
   # Airflow web UI
-  airflow-webserver:
-    image: apache/airflow:2.9.3
-    container_name: load-forecast-airflow-webserver
+  airflow-api:
+    <<: *airflow-common
+    container_name: load-forecast-airflow-api
     depends_on:
       airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-    user: "${AIRFLOW_UID:-50000}:0"
     environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
-      - AIRFLOW__WEBSERVER__BASE_URL=http://localhost:8080/airflow
-      - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
+      <<: *airflow-common-env
+      AIRFLOW__WEBSERVER__BASE_URL: http://localhost:8080/airflow
+      AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX: "True"
+      AIRFLOW__WEBSERVER__COOKIE_PATH: /airflow
+      UVICORN_ROOT_PATH: /airflow
     volumes:
       - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
       - ./airflow/plugins:/opt/airflow/plugins
+      - airflow_logs:/opt/airflow/logs
+      - ./services:/app/services:ro
+      - ./core:/app/core:ro
+      - ./configs:/app/configs:ro
+      - ./sql:/app/sql:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+    command: ["airflow", "api-server"]
+
+    # Parses DAG files and writes them to the metadata DB
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: load-forecast-airflow-dag-processor
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/plugins:/opt/airflow/plugins:ro
+      - airflow_logs:/opt/airflow/logs
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8080/airflow/health', timeout=3)",
-        ]
-      interval: 15s
-      timeout: 5s
-      retries: 6
+      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname $$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 30s
-    command: webserver
-    networks:
-      - backend
-    restart: unless-stopped
+    command: ["airflow", "dag-processor"]
+
+  # Required if any of your DAGs use sensors or @task.sensor / deferred operators
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: load-forecast-airflow-triggerer
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/plugins:/opt/airflow/plugins:ro
+      - airflow_logs:/opt/airflow/logs
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type TriggererJob --hostname $$HOSTNAME"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    command: ["airflow", "triggerer"]
 
   airflow-scheduler:
-    image: apache/airflow:2.9.3
+    <<: *airflow-common
     container_name: load-forecast-airflow-scheduler
     depends_on:
       airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-    user: "${AIRFLOW_UID:-50000}:0"
+      airflow-dag-processor:
+        condition: service_healthy
     environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
-      - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${AIRFLOW_DB_USER:-airflow}:${AIRFLOW_DB_PASSWORD:-airflow}@airflow-postgres/${AIRFLOW_DB_NAME:-airflow}
+      <<: *airflow-common-env
+      AIRFLOW_VAR_MLFLOW_TRACKING_URI: "${MLFLOW_TRACKING_URI:-http://mlflow:5000}"
+      AIRFLOW_VAR_MLFLOW_TRACKING_MODE: "${MLFLOW_TRACKING_MODE:-server}"
+      AIRFLOW_VAR_DAGSHUB_REPO: "${DAGSHUB_REPO:-}"
+      AIRFLOW_VAR_MLFLOW_TRACKING_USERNAME: "${MLFLOW_TRACKING_USERNAME:-}"
+      AIRFLOW_VAR_MLFLOW_TRACKING_PASSWORD: "${MLFLOW_TRACKING_PASSWORD:-}"
+      AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: Europe/Berlin
+      MLFLOW_EXPERIMENT_NAME: "${MLFLOW_EXPERIMENT_NAME}"
+      MLFLOW_TRACKING_MODE: "${MLFLOW_TRACKING_MODE}"
+      GIT_PYTHON_REFRESH: quiet
     volumes:
-      - ./airflow/dags:/opt/airflow/dags
-      - ./airflow/logs:/opt/airflow/logs
-      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - ./airflow/plugins:/opt/airflow/plugins:ro
+      - ./core:/app/core:ro
+      - ./configs:/app/configs:ro
+      - ./services:/app/services:ro
+      - ./sql:/app/sql:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+      - airflow_logs:/opt/airflow/logs
+      - dvc_cache:/root/.cache/dvc
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "airflow jobs check --job-type SchedulerJob --hostname $$HOSTNAME",
-        ]
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname $$HOSTNAME"]
       interval: 20s
       timeout: 10s
       retries: 5
       start_period: 40s
-    command: scheduler
-    networks:
-      - backend
-    restart: unless-stopped
-
+    command: ["airflow", "scheduler"]
 
   # ------------------------------------
   # Core: Data & Modeling
@@ -292,6 +383,7 @@ services:
         - APP_GID=${APP_GID:-1000}
     image:
       load-forecast-base:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-base
     networks:
       - backend
 
@@ -303,6 +395,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-api:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-api
     depends_on:
       base:
         condition: service_completed_successfully
@@ -327,6 +420,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-auth:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-auth
     depends_on:
       base:
         condition: service_completed_successfully
@@ -352,6 +446,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-ingestion:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-ingestion
     depends_on:
       base:
         condition: service_completed_successfully
@@ -370,6 +465,7 @@ services:
         BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-preprocessing:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-preprocessing
     depends_on:
       ingestion:
         condition: service_completed_successfully
@@ -388,6 +484,7 @@ services:
         - BASE_IMAGE_TAG=${IMAGE_TAG:?IMAGE_TAG is required}
     image:
       load-forecast-marts:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-marts
     depends_on:
       preprocessing:
         condition: service_completed_successfully
@@ -397,12 +494,61 @@ services:
     networks:
       - backend
 
+  # Modeling
+  training:
+    profiles: ["jobs"]
+    build:
+      context: .
+      dockerfile: docker/training/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ${IMAGE_TAG:?IMAGE_TAG is required}
+    image:
+      load-forecast-training:${IMAGE_TAG:?IMAGE_TAG is required}
+    container_name: load-forecast-training
+    environment:
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      - MLFLOW_TRACKING_MODE=${MLFLOW_TRACKING_MODE:-server}
+      - DAGSHUB_REPO=${DAGSHUB_REPO:-}
+      - MLFLOW_TRACKING_USERNAME=${MLFLOW_TRACKING_USERNAME:-}
+      - MLFLOW_TRACKING_PASSWORD=${MLFLOW_TRACKING_PASSWORD:-}
+    volumes:
+      - ./data:/app/data:ro
+      - ./models:/app/models:rw
+    networks:
+      - backend
+
 networks:
   backend:
+    name: german-load-forecasting-mlops_backend
+    driver: bridge
 
 volumes:
+  # Monitoring stack
   prometheus_data:
+    name: load-forecast-prometheus-data
   alertmanager_data:
+    name: load-forecast-alertmanager-data
   grafana-storage:
+    name: load-forecast-grafana-storage
+
+  # Orchestration
   airflow_pgdata:
-  
+    name: load-forecast-airflow-pgdata
+  airflow_logs:
+    name: load-forecast-airflow-logs
+  airflow_dags:
+    name: load-forecast-airflow-dags
+
+  # ML Tracking
+  mlflow_data:
+    name: load-forecast-mlflow-data
+
+  # Cache and temp
+  dvc_cache:
+    name: load-forecast-dvc-cache
+  pip_cache:
+    name: load-forecast-pip-cache
+
+  # Feature store (if using)
+  feature_store:
+    name: load-forecast-feature-store

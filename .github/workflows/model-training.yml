@@ -1,0 +1,254 @@
+name: Model Training and Artifact Delivery
+
+on:
+  workflow_dispatch:
+    inputs:
+      training_mode:
+        description: Training execution mode
+        required: true
+        default: script
+        type: choice
+        options:
+          - script
+          - dvc
+      model_name:
+        description: Optional model key (used only in script mode)
+        required: false
+        default: ""
+        type: string
+      push_to_storage:
+        description: Push trained artifacts to configured DVC remote storage
+        required: true
+        default: false
+        type: boolean
+      push_to_registry:
+        description: Register latest model in MLflow registry (DagsHub)
+        required: true
+        default: false
+        type: boolean
+      registered_model_name:
+        description: Registered model name when push_to_registry=true
+        required: false
+        default: german_load_forecasting_gbr
+        type: string
+  schedule:
+    - cron: "0 2 * * 1"
+  push:
+    branches: ["main"]
+    paths:
+      - "services/model/**"
+      - "services/data/**"
+      - "configs/**"
+      - "sql/**"
+      - "dvc.yaml"
+      - "pyproject.toml"
+      - ".github/workflows/model-training.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  train-and-deliver:
+    name: Train model and deliver artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('**/pyproject.toml', '**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Resolve tracking mode
+        shell: bash
+        env:
+          PUSH_TO_REGISTRY: ${{ github.event.inputs.push_to_registry || 'false' }}
+          DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$PUSH_TO_REGISTRY" == "true" ]]; then
+            if [[ -z "${DAGSHUB_REPO:-}" ]]; then
+              echo "push_to_registry=true requires DAGSHUB_REPO secret." >&2
+              exit 1
+            fi
+            echo "MLFLOW_TRACKING_MODE=dagshub" >> "$GITHUB_ENV"
+            echo "MLFLOW_TRACKING_URI=https://dagshub.com/${DAGSHUB_REPO}.mlflow" >> "$GITHUB_ENV"
+          else
+            echo "MLFLOW_TRACKING_MODE=local" >> "$GITHUB_ENV"
+            echo "MLFLOW_TRACKING_URI=" >> "$GITHUB_ENV"
+          fi
+
+      - name: Run training pipeline
+        shell: bash
+        env:
+          TRAINING_MODE: ${{ github.event.inputs.training_mode || 'script' }}
+          MODEL_NAME: ${{ github.event.inputs.model_name || '' }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$TRAINING_MODE" == "dvc" ]]; then
+            IMAGE_TAG="ci-${GITHUB_SHA::7}"
+            make build IMAGE_TAG="$IMAGE_TAG"
+            make repro-stage STAGE=training IMAGE_TAG="$IMAGE_TAG"
+          else
+            uv run python -m services.data.ingestion.main
+            uv run python -m services.data.preprocessing.main
+            uv run python -m services.data.marts.main
+
+            if [[ -n "$MODEL_NAME" ]]; then
+              uv run python - <<'PY'
+              import os
+              from services.model.training.main import run_training
+
+              run_training(model_name=os.environ["MODEL_NAME"])
+              PY
+            else
+              uv run python -m services.model.training.main
+            fi
+          fi
+
+      - name: Build metrics summary for artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv run python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          import mlflow
+          from mlflow.tracking import MlflowClient
+
+          mode = os.getenv("MLFLOW_TRACKING_MODE", "local")
+          if mode == "local":
+            tracking_uri = Path("models/mlruns").resolve().as_uri()
+          else:
+            tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
+
+          mlflow.set_tracking_uri(tracking_uri)
+          client = MlflowClient(tracking_uri=tracking_uri)
+
+          experiment = client.get_experiment_by_name("german-load-forecasting")
+          if experiment is None:
+            raise RuntimeError("No MLflow experiment named 'german-load-forecasting' was found.")
+
+          runs = client.search_runs([experiment.experiment_id], order_by=["attributes.start_time DESC"], max_results=1)
+          if not runs:
+            raise RuntimeError("No MLflow runs found to summarize.")
+
+          run = runs[0]
+          output = {
+            "experiment_id": experiment.experiment_id,
+            "run_id": run.info.run_id,
+            "run_name": run.data.tags.get("mlflow.runName"),
+            "status": run.info.status,
+            "start_time": run.info.start_time,
+            "end_time": run.info.end_time,
+            "params": run.data.params,
+            "metrics": run.data.metrics,
+          }
+
+          metrics_file = Path("models/metrics/latest_metrics.json")
+          metrics_file.parent.mkdir(parents=True, exist_ok=True)
+          metrics_file.write_text(json.dumps(output, indent=2), encoding="utf-8")
+          print(f"Saved metrics summary: {metrics_file}")
+          PY
+
+      - name: Upload training artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model-artifacts-${{ github.run_id }}
+          if-no-files-found: warn
+          retention-days: 14
+          path: |
+            models/models/**
+            models/best_params/**
+            models/metrics/latest_metrics.json
+            models/mlruns/**
+
+      - name: Push artifacts to DVC remote storage
+        if: ${{ github.event.inputs.push_to_storage == 'true' }}
+        shell: bash
+        env:
+          DVC_USERNAME: ${{ secrets.DVC_REMOTE_USERNAME }}
+          DVC_PASSWORD: ${{ secrets.DVC_REMOTE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DVC_USERNAME:-}" || -z "${DVC_PASSWORD:-}" ]]; then
+            echo "push_to_storage=true requires DVC_REMOTE_USERNAME and DVC_REMOTE_PASSWORD secrets." >&2
+            exit 1
+          fi
+
+          uv run dvc remote modify --local origin auth basic
+          uv run dvc remote modify --local origin user "$DVC_USERNAME"
+          uv run dvc remote modify --local origin password "$DVC_PASSWORD"
+
+          uv run dvc add models/models models/best_params models/metrics/latest_metrics.json
+          uv run dvc push models/models.dvc models/best_params.dvc models/metrics/latest_metrics.json.dvc
+
+      - name: Register latest model in MLflow registry
+        if: ${{ github.event.inputs.push_to_registry == 'true' }}
+        shell: bash
+        env:
+          REGISTERED_MODEL_NAME: ${{ github.event.inputs.registered_model_name || 'german_load_forecasting_gbr' }}
+          MLFLOW_EXPERIMENT_NAME: german-load-forecasting
+          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${DAGSHUB_USERNAME:-}" || -z "${DAGSHUB_TOKEN:-}" || -z "${DAGSHUB_REPO:-}" ]]; then
+            echo "push_to_registry=true requires DAGSHUB_REPO, DAGSHUB_USERNAME, DAGSHUB_TOKEN secrets." >&2
+            exit 1
+          fi
+
+          uv run python - <<'PY'
+            import os
+
+            import mlflow
+            from mlflow.tracking import MlflowClient
+
+            tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
+            experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "german-load-forecasting")
+            registered_model_name = os.environ["REGISTERED_MODEL_NAME"]
+
+            mlflow.set_tracking_uri(tracking_uri)
+            client = MlflowClient(tracking_uri=tracking_uri)
+
+            experiment = client.get_experiment_by_name(experiment_name)
+            if experiment is None:
+              raise RuntimeError(f"Experiment '{experiment_name}' was not found.")
+
+            runs = client.search_runs([experiment.experiment_id], order_by=["attributes.start_time DESC"], max_results=1)
+            if not runs:
+              raise RuntimeError("No runs found to register.")
+
+            run_id = runs[0].info.run_id
+            model_uri = f"runs:/{run_id}/training/sklearn_model"
+            result = mlflow.register_model(model_uri=model_uri, name=registered_model_name)
+            print(f"Registered model version: name={result.name} version={result.version} source_run={run_id}")
+            PY

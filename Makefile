@@ -23,7 +23,10 @@ COMPOSE ?= docker compose
 
 SERVING_SERVICES := \
 	prometheus alertmanager node-exporter cadvisor grafana nginx \
-	airflow-postgres airflow-init airflow-webserver airflow-scheduler \
+	mlflow \
+	airflow-postgres airflow-init airflow-api \
+	airflow-dag-processor airflow-triggerer \
+	airflow-scheduler \
 	base api auth
 
 define require_var
@@ -68,6 +71,9 @@ build: check-image-tag build-base ## Build all service images
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
 		-t load-forecast-auth:$(IMAGE_TAG) \
 		-f docker/auth/Dockerfile .
+	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
+		-t load-forecast-training:$(IMAGE_TAG) \
+		-f docker/training/Dockerfile .
 
 build-api: check-image-tag build-base ## Build API image only
 	docker build --build-arg BASE_IMAGE_TAG=$(IMAGE_TAG) \
@@ -123,13 +129,15 @@ compose-up-monitoring: check-image-tag ## Start monitoring services plus API
 compose-down: ## Stop and remove compose resources
 	$(COMPOSE) down --remove-orphans -v
 
-pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts on demand
+pipeline-run: check-image-tag ## Run ingestion -> preprocessing -> marts -> training on demand
 	$(COMPOSE) --profile jobs run --rm ingestion \
 		python -m services.data.ingestion.main
 	$(COMPOSE) --profile jobs run --rm preprocessing \
 		python -m services.data.preprocessing.main
 	$(COMPOSE) --profile jobs run --rm marts \
 		python -m services.data.marts.main
+	$(COMPOSE) --profile jobs run --rm training \
+		python -m services.model.training.main
 
 pipeline-stage: check-image-tag ## Run one pipeline job (STAGE=ingestion|preprocessing|marts)
 	@test -n "$(STAGE)" || \
@@ -147,6 +155,9 @@ pipeline-stage: check-image-tag ## Run one pipeline job (STAGE=ingestion|preproc
 		marts) \
 			$(COMPOSE) --profile jobs run --rm marts \
 				python -m services.data.marts.main ;; \
+		training) \
+			$(COMPOSE) --profile jobs run --rm training \
+				python -m services.model.training.main ;; \
 	esac
 
 api-check: check-api-port ## Check API health and alert endpoint
@@ -169,17 +180,17 @@ api-check: check-api-port ## Check API health and alert endpoint
 		-d '{"alerts":[]}'
 
 airflow-check: ## Check Airflow containers and routes
-	@echo "Checking Airflow webserver container health"
+	@echo "Checking Airflow api container health"
 	@for i in 1 2 3 4 5 6 7 8 9 10; do \
 		if $(COMPOSE) ps --format json | \
-			grep -q '"Service":"airflow-webserver".*"State":"running"'; then \
-			echo "Airflow webserver container is running"; \
+			grep -q '"Service":"airflow-api".*"State":"running"'; then \
+			echo "Airflow api container is running"; \
 			break; \
 		fi; \
-		echo "Waiting for airflow-webserver startup... ($$i/10)"; \
+		echo "Waiting for airflow-api startup... ($$i/10)"; \
 		sleep 2; \
 		if [ $$i -eq 10 ]; then \
-			echo "Airflow webserver is not running"; \
+			echo "Airflow api is not running"; \
 			exit 1; \
 		fi; \
 	done
@@ -205,14 +216,16 @@ airflow-check: ## Check Airflow containers and routes
 	else \
 		echo "Direct airflow port not exposed (this is expected if debug compose is not used)"; \
 	fi
+	@echo "Checking MLflow via nginx route"
+	@curl -fsS -I http://127.0.0.1:8080/mlflow/ >/dev/null && echo "Nginx MLflow route is reachable"
 
 airflow-reset-admin: check-airflow-admin-env ## Recreate Airflow admin user from .env
 	@echo "Resetting Airflow admin credentials from .env values"
 	@ROLE="$(AIRFLOW_ADMIN_ROLE)"; \
 	case "$$ROLE" in Admin|Viewer|User|Op|Public) ;; *) ROLE="Admin" ;; esac; \
-	$(COMPOSE) exec -T airflow-webserver airflow users delete \
+	$(COMPOSE) exec -T airflow-api airflow users delete \
 		--username "$(AIRFLOW_ADMIN_USERNAME)" >/dev/null 2>&1 || true; \
-	$(COMPOSE) exec -T airflow-webserver airflow users create \
+	$(COMPOSE) exec -T airflow-api airflow users create \
 		--role "$$ROLE" \
 		--username "$(AIRFLOW_ADMIN_USERNAME)" \
 		--password "$(AIRFLOW_ADMIN_PASSWORD)" \
@@ -242,6 +255,7 @@ api-load: clean-db ## Run ingestion/preprocessing/marts and start API locally
 	uv run python -m services.data.ingestion.main
 	uv run python -m services.data.preprocessing.main
 	uv run python -m services.data.marts.main
+	uv run python -m services.model.training.main
 	uv run uvicorn  services.api.main:app --reload
 
 

@@ -1,0 +1,79 @@
+# Automate deployment to staging and production
+# Actions:
+#   Create workflow to deploy to staging on main branch merge.
+#   Add manual or tag-based trigger for production deploy.
+#   Use secrets for credentials.
+#   Notify team on deploy
+name: Deploy
+
+on:
+  push:
+    branches: [ "main" ]
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: staging
+
+permissions:
+  contents: read
+  deployments: write
+
+
+jobs:
+  deploy-staging:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: staging-deploy
+      cancel-in-progress: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Deployment (Staging)
+        id: create_deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: staging
+
+      - name: Deploy to Staging
+        run: echo "Deploying to staging..."
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{ \"content\": \"Staging deploy: ${{ job.status }}\" }"
+
+  deploy-production:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: production-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Deployment (Production)
+        id: create_deployment
+        uses: chrnorm/deployment-action@v2
+        with:
+          token: ${{ github.token }}
+          environment: production
+
+      - name: Deploy to Production
+        run: echo "Deploying to production..."
+
+      - name: Notify Discord
+        if: always()
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{ \"content\": \"Production deploy: ${{ job.status }}\" }"

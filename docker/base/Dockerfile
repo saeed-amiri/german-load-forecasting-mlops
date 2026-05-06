@@ -18,10 +18,19 @@ COPY configs ./configs
 COPY core ./core
 COPY sql ./sql
 
-ARG APP_UID=1000
-ARG APP_GID=1000
+ARG APP_UID=50000
+ARG APP_GID=0
 
-RUN groupadd --gid ${APP_GID} appuser \
-  && useradd --uid ${APP_UID} --gid appuser --create-home appuser \
-  && mkdir -p ./logs ./data \
-  && chown -R appuser:appuser /app
+ENV PYTHONPATH="/app"
+ENV TZ=Europe/Berlin
+
+RUN set -eux; \
+  if getent group "${APP_GID}" >/dev/null; then \
+    APP_GROUP="$(getent group "${APP_GID}" | cut -d: -f1)"; \
+  else \
+    groupadd --gid "${APP_GID}" appuser; \
+    APP_GROUP="appuser"; \
+  fi; \
+  useradd --uid "${APP_UID}" --gid "${APP_GROUP}" --create-home appuser; \
+  mkdir -p ./logs ./data ./model; \
+  chown -R appuser:"${APP_GROUP}" /app

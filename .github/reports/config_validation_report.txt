@@ -1,0 +1,233 @@
+Imports succeeded.
+Config loaded successfully.
+
+Config contents:
+{
+    "project_root": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops",
+    "paths": {
+        "processed_file": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/data/processed/processed.parquet",
+        "database": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/data/raw/database.duckdb",
+        "marts_dir": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/data/marts",
+        "models_dir": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/models"
+    },
+    "sql": {
+        "root": "sql",
+        "chunk_size": 50000,
+        "sources": {
+            "load": {
+                "frequency": "hourly",
+                "timestamp": "utc_timestamp",
+                "raw_file": "data/raw/time_series-2020-10-06.csv",
+                "columns": [
+                    {
+                        "raw": "utc_timestamp",
+                        "clean": "time"
+                    },
+                    {
+                        "raw": "DE_load_actual_entsoe_transparency",
+                        "clean": "load_actual"
+                    },
+                    {
+                        "raw": "DE_load_forecast_entsoe_transparency",
+                        "clean": "alien_forecast"
+                    },
+                    {
+                        "raw": "DE_solar_generation_actual",
+                        "clean": "solar_actual"
+                    },
+                    {
+                        "raw": "DE_wind_generation_actual",
+                        "clean": "wind_actual"
+                    },
+                    {
+                        "raw": "DE_wind_onshore_generation_actual",
+                        "clean": "wind_onshore"
+                    },
+                    {
+                        "raw": "DE_wind_offshore_generation_actual",
+                        "clean": "wind_offshore"
+                    }
+                ],
+                "staging": {
+                    "tables": {
+                        "main": "stg_german_load"
+                    },
+                    "sql_files": {
+                        "main": "staging/stg_german_load.sql"
+                    }
+                },
+                "features": {
+                    "tables": {
+                        "load": "fct_german_load",
+                        "log": "fct_german_load_log"
+                    },
+                    "sql_files": {
+                        "load": "features/fct_german_load.sql",
+                        "log": "features/load_log.sql"
+                    }
+                },
+                "marts": {
+                    "tables": {
+                        "main": "german_load_api",
+                        "melt": "load_melt"
+                    },
+                    "sql_files": {
+                        "load": "marts/german_load_api.sql",
+                        "load_melt": "marts/load_melt.sql"
+                    }
+                }
+            }
+        }
+    },
+    "logging": {
+        "level": 20,
+        "to_console": true,
+        "service_logs": {
+            "ingestion": "ingest.log",
+            "preprocessing": "preprocess.log",
+            "marts": "marts.log",
+            "training": "training.log"
+        }
+    },
+    "api": {
+        "templates": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/services/api/templates",
+        "static": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/services/api/static"
+    },
+    "auth": {
+        "database": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/data/raw/auth.duckdb",
+        "init_sql": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/sql/auth/user.sql",
+        "jwt_secret_key": "change-me-in-production",
+        "jwt_algorithm": "HS256",
+        "access_token_expire_minutes": 30
+    },
+    "train": {
+        "common": {
+            "database": {
+                "name": "processed.parquet"
+            },
+            "target_column": "load_actual",
+            "train_columns": [
+                "solar_actual",
+                "wind_actual",
+                "wind_onshore",
+                "wind_offshore",
+                "hour_of_day",
+                "day_of_week",
+                "load_actual_lag_1",
+                "load_actual_lag_24"
+            ]
+        },
+        "ofiles": {
+            "ofmt": "joblib",
+            "model_subdir": "models",
+            "params_subdir": "best_params",
+            "model_name_template": "{model_tag}__{model_id}__{run_id}",
+            "params_name_template": "{model_tag}__best_params__{run_id}",
+            "params_latest_pointer": "latest.json",
+            "predictions": "predictions"
+        },
+        "evaluation": {
+            "metrics": [
+                "mae",
+                "rmse"
+            ],
+            "cv_folds": 3,
+            "scoring": "neg_mean_absolute_error",
+            "save_predictions": true
+        },
+        "sql": {
+            "tables": {
+                "load": "placeholder"
+            },
+            "files": {
+                "load": "load_processed_data.sql"
+            }
+        },
+        "mlflow": {
+            "enabled": true,
+            "tracking_mode": "server",
+            "tracking_uri": "None",
+            "dagshub_repo": "None",
+            "experiment_name": "german-load-forecasting",
+            "run_name_template": "{model_tag}__{run_id}",
+            "artifact_path": "training",
+            "log_model": true,
+            "register_model": false,
+            "registered_model_template": "german_load_forecasting_{model_name}"
+        },
+        "default_model": "gbr",
+        "use_saved_best_params": false,
+        "models": {
+            "gbr": {
+                "model_id": "gbr",
+                "model_tag": "baseline_gbr",
+                "param_grid": {
+                    "n_estimators": [
+                        200,
+                        500
+                    ],
+                    "max_depth": [
+                        5,
+                        8
+                    ],
+                    "min_samples_split": [
+                        5,
+                        10
+                    ],
+                    "learning_rate": [
+                        0.01,
+                        0.05
+                    ]
+                },
+                "train_size": 0.8,
+                "evaluation_override": {
+                    "metrics": [
+                        "mae",
+                        "rmse"
+                    ],
+                    "cv_folds": null,
+                    "scoring": null,
+                    "save_predictions": null
+                }
+            },
+            "rfr": {
+                "model_id": "rfr",
+                "model_tag": "baseline_rfr",
+                "param_grid": {
+                    "n_estimators": [
+                        200,
+                        500
+                    ],
+                    "max_depth": [
+                        8,
+                        12
+                    ],
+                    "min_samples_split": [
+                        2,
+                        5
+                    ],
+                    "min_samples_leaf": [
+                        1,
+                        2
+                    ]
+                },
+                "train_size": 0.8,
+                "evaluation_override": {
+                    "metrics": [
+                        "mae",
+                        "rmse"
+                    ],
+                    "cv_folds": null,
+                    "scoring": null,
+                    "save_predictions": null
+                }
+            }
+        }
+    },
+    "runtime": {
+        "project_root": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops",
+        "config_file": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/configs/config.yml",
+        "logs_dir": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/logs",
+        "sql_dir": "/home/santiago/Documents/MyScripts/german-load-forecasting-mlops/sql"
+    }
+}

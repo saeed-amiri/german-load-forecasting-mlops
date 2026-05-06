@@ -15,11 +15,9 @@ from pathlib import Path
 def setup_logging(log_file: Path, level: int = logging.INFO, to_console: bool = True) -> None:
     """
     Configures a root logger that outputs to both a file and
-    the console.
+    the console. Falls back to console-only when the log file
+    is not writable (e.g. inside Airflow with mismatched UIDs).
     """
-    # Ensure directory exists
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-
     root = logging.getLogger()
     root.setLevel(level)
 
@@ -32,13 +30,21 @@ def setup_logging(log_file: Path, level: int = logging.INFO, to_console: bool = 
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # File Handler
-    file_handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
-    file_handler.setLevel(level)
-    file_handler.setFormatter(fmt)
-    root.addHandler(file_handler)
+    # File Handler — graceful fallback if not writable
+    try:
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        file_handler = logging.FileHandler(log_file, mode="a", encoding="utf-8")
+        file_handler.setLevel(level)
+        file_handler.setFormatter(fmt)
+        root.addHandler(file_handler)
+    except (PermissionError, OSError) as exc:
+        logging.warning(
+            "File logging unavailable (%s), using console-only: %s",
+            exc,
+            log_file,
+        )
 
-    # Console Handle
+    # Console Handler
     if to_console:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)

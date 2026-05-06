@@ -3,6 +3,8 @@
 Setting up the configurations for the pipeline
 """
 
+from __future__ import annotations
+
 import logging
 from pathlib import Path
 from typing import Optional
@@ -49,6 +51,7 @@ class PipelineConfig(BaseModel):
                 "processed_file": self._to_abs(self.project_root, self.paths.processed_file),
                 "database": self._to_abs(self.project_root, self.paths.database),
                 "marts_dir": self._to_abs(self.project_root, self.paths.marts_dir),
+                "models_dir": self._to_abs(self.project_root, self.paths.models_dir),
             }
         )
 

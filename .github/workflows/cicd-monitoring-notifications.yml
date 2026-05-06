@@ -1,0 +1,241 @@
+name: CI/CD Monitoring and Notifications
+
+on:
+  workflow_run:
+    workflows:
+      - CI Pipeline
+      - Data Validation
+      - Docker Build
+      - Deploy
+      - Model Training and Artifact Delivery
+      - Workflow Security Audit
+    types:
+      - completed
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  notify-run-completion:
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    env:
+      DURATION_THRESHOLD_MINUTES: ${{ vars.CI_ALERT_DURATION_MINUTES || '30' }}
+    steps:
+      - name: Compute run status and duration
+        id: evaluate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime
+
+          event_path = os.environ["GITHUB_EVENT_PATH"]
+          threshold_minutes = int(os.environ.get("DURATION_THRESHOLD_MINUTES", "30"))
+
+          def parse_iso(ts: str) -> datetime:
+              return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+          with open(event_path, encoding="utf-8") as f:
+              event = json.load(f)
+
+          run = event["workflow_run"]
+          conclusion = run.get("conclusion", "unknown")
+          started = run.get("run_started_at")
+          updated = run.get("updated_at")
+
+          duration_minutes = 0
+          if started and updated:
+              duration_minutes = int((parse_iso(updated) - parse_iso(started)).total_seconds() // 60)
+
+          has_failed = conclusion in {"failure", "cancelled", "timed_out", "action_required"}
+          exceeded_duration = duration_minutes >= threshold_minutes
+          should_alert = has_failed or exceeded_duration
+
+          summary = (
+              f"Workflow '{run.get('name')}' concluded with '{conclusion}'. "
+              f"Duration: {duration_minutes}m (threshold: {threshold_minutes}m). "
+              f"Run URL: {run.get('html_url')}"
+          )
+
+          output_path = os.environ["GITHUB_OUTPUT"]
+          with open(output_path, "a", encoding="utf-8") as out:
+              out.write(f"should_alert={'true' if should_alert else 'false'}\n")
+              out.write(f"conclusion={conclusion}\n")
+              out.write(f"duration_minutes={duration_minutes}\n")
+              out.write(f"threshold_minutes={threshold_minutes}\n")
+              out.write(f"run_url={run.get('html_url')}\n")
+              out.write(f"workflow_name={run.get('name')}\n")
+              out.write(f"summary={summary}\n")
+          PY
+
+      - name: Emit GitHub alert annotation
+        if: steps.evaluate.outputs.should_alert == 'true'
+        shell: bash
+        env:
+          SUMMARY: ${{ steps.evaluate.outputs.summary }}
+        run: |
+          set -euo pipefail
+          echo "::error::${SUMMARY}"
+
+      - name: Add run summary
+        shell: bash
+        run: |
+          {
+            echo "## CI/CD Run Monitoring"
+            echo "- Workflow: ${{ steps.evaluate.outputs.workflow_name }}"
+            echo "- Conclusion: ${{ steps.evaluate.outputs.conclusion }}"
+            echo "- Duration (min): ${{ steps.evaluate.outputs.duration_minutes }}"
+            echo "- Threshold (min): ${{ steps.evaluate.outputs.threshold_minutes }}"
+            echo "- Alert triggered: ${{ steps.evaluate.outputs.should_alert }}"
+            echo "- Run URL: ${{ steps.evaluate.outputs.run_url }}"
+            echo "- Notification mode: GitHub Actions failure + annotation"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger GitHub notification on alert
+        if: steps.evaluate.outputs.should_alert == 'true'
+        shell: bash
+        env:
+          SUMMARY: ${{ steps.evaluate.outputs.summary }}
+        run: |
+          set -euo pipefail
+          echo "Failing job to generate native GitHub workflow notifications."
+          echo "Alert: ${SUMMARY}"
+          exit 1
+
+  monitor-recent-runs:
+    if: github.event_name != 'workflow_run'
+    runs-on: ubuntu-latest
+    env:
+      DURATION_THRESHOLD_MINUTES: ${{ vars.CI_ALERT_DURATION_MINUTES || '30' }}
+      LOOKBACK_HOURS: ${{ vars.CI_MONITOR_LOOKBACK_HOURS || '168' }}
+    steps:
+      - name: Analyze recent workflow runs
+        id: analyze
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          repo = os.environ["REPO"]
+          token = os.environ["GH_TOKEN"]
+          threshold_minutes = int(os.environ.get("DURATION_THRESHOLD_MINUTES", "30"))
+          lookback_hours = int(os.environ.get("LOOKBACK_HOURS", "24"))
+
+          def parse_iso(ts: str) -> datetime:
+              return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+
+          url = f"https://api.github.com/repos/{repo}/actions/runs?per_page=100"
+          req = urllib.request.Request(
+              url,
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {token}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+
+          with urllib.request.urlopen(req, timeout=30) as resp:
+              data = json.load(resp)
+
+          now = datetime.now(timezone.utc)
+          cutoff = now - timedelta(hours=lookback_hours)
+          failure_states = {"failure", "cancelled", "timed_out", "action_required"}
+
+          monitored_workflows = {
+              "CI Pipeline",
+              "Data Validation",
+              "Docker Build",
+              "Deploy",
+              "Model Training and Artifact Delivery",
+              "Workflow Security Audit",
+          }
+
+          failure_count = 0
+          long_run_count = 0
+          evaluated_count = 0
+
+          for run in data.get("workflow_runs", []):
+              name = run.get("name")
+              if name not in monitored_workflows:
+                  continue
+
+              started_at = run.get("run_started_at")
+              updated_at = run.get("updated_at")
+              if not started_at or not updated_at:
+                  continue
+
+              started = parse_iso(started_at)
+              if started < cutoff:
+                  continue
+
+              evaluated_count += 1
+              duration_minutes = int((parse_iso(updated_at) - started).total_seconds() // 60)
+              if run.get("conclusion") in failure_states:
+                  failure_count += 1
+              if duration_minutes >= threshold_minutes:
+                  long_run_count += 1
+
+          should_alert = failure_count > 0 or long_run_count > 0
+          summary = (
+              f"CI/CD monitor ({lookback_hours}h): evaluated={evaluated_count}, "
+              f"failures={failure_count}, long_runs={long_run_count}, "
+              f"duration_threshold={threshold_minutes}m."
+          )
+
+          out_path = os.environ["GITHUB_OUTPUT"]
+          with open(out_path, "a", encoding="utf-8") as out:
+              out.write(f"should_alert={'true' if should_alert else 'false'}\n")
+              out.write(f"summary={summary}\n")
+              out.write(f"evaluated_count={evaluated_count}\n")
+              out.write(f"failure_count={failure_count}\n")
+              out.write(f"long_run_count={long_run_count}\n")
+              out.write(f"threshold_minutes={threshold_minutes}\n")
+          PY
+
+      - name: Emit GitHub monitor annotation
+        if: steps.analyze.outputs.should_alert == 'true'
+        shell: bash
+        env:
+          SUMMARY: ${{ steps.analyze.outputs.summary }}
+        run: |
+          set -euo pipefail
+          echo "::error::${SUMMARY}"
+
+      - name: Add monitor summary
+        shell: bash
+        run: |
+          {
+            echo "## CI/CD Monitoring Summary"
+            echo "- Evaluated runs: ${{ steps.analyze.outputs.evaluated_count }}"
+            echo "- Failed runs: ${{ steps.analyze.outputs.failure_count }}"
+            echo "- Long runs: ${{ steps.analyze.outputs.long_run_count }}"
+            echo "- Threshold (min): ${{ steps.analyze.outputs.threshold_minutes }}"
+            echo "- Alert triggered: ${{ steps.analyze.outputs.should_alert }}"
+            echo "- Details: ${{ steps.analyze.outputs.summary }}"
+            echo "- Notification mode: GitHub Actions failure + annotation"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Trigger GitHub notification on monitor alert
+        if: steps.analyze.outputs.should_alert == 'true'
+        shell: bash
+        env:
+          SUMMARY: ${{ steps.analyze.outputs.summary }}
+        run: |
+          set -euo pipefail
+          echo "Failing job to generate native GitHub workflow notifications."
+          echo "Alert: ${SUMMARY}"
+          exit 1
