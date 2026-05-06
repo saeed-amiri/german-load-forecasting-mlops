@@ -1,0 +1,51 @@
+name: Workflow Security Audit
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-workflows:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Scan workflow files for potential secret leaks
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Detect suspicious hardcoded secret-like assignments in workflow YAML.
+          # This is a lightweight guard and should be combined with repo-level secret scanning.
+          if rg -n --pcre2 "(?i)(password|token|secret|api[_-]?key)\s*[:=]\s*['\"][^$\n]+['\"]" .github/workflows/*.yml; then
+            echo "Potential hardcoded secret detected in workflow files." >&2
+            exit 1
+          fi
+
+          echo "No obvious hardcoded secrets found in workflow files."
+
+      - name: Enforce permissions blocks in workflow files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          missing_permissions=$(rg -L "^permissions:" .github/workflows/*.yml || true)
+          if [[ -n "${missing_permissions}" ]]; then
+            echo "These workflow files are missing a permissions block:" >&2
+            echo "${missing_permissions}" >&2
+            exit 1
+          fi
+
+          echo "All workflow files include an explicit permissions block."
