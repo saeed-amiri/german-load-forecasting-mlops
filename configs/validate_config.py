@@ -14,12 +14,12 @@ result_lines = []
 success = True
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
 try:
-    from .main import PipelineConfig, load_config
+    from configs.main import PipelineConfig, load_config
 
     result_lines.append("Imports succeeded.")
 except Exception:
