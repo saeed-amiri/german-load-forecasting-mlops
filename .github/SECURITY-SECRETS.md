@@ -11,6 +11,11 @@ All credentials and sensitive configuration used by workflows must be stored in 
 - `DVC_REMOTE_USERNAME`: Username for DVC remote authentication.
 - `DVC_REMOTE_PASSWORD`: Password or token for DVC remote authentication.
 
+## Optional repository variables
+
+- `CI_ALERT_DURATION_MINUTES`: Duration threshold in minutes for long-run alerts (default: `30`).
+- `CI_MONITOR_LOOKBACK_HOURS`: Lookback window for scheduled monitoring job (default: `168`).
+
 ## Rules
 
 - Never hardcode tokens, passwords, API keys, or webhooks in workflow YAML.
