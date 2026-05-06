@@ -2,10 +2,10 @@
 Validate configs for github actions workflow.
 """
 
+import json
 import sys
 import traceback
 from pathlib import Path
-import json
 
 REPORT_PATH = Path(".github/reports/config_validation_report.txt")
 REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
