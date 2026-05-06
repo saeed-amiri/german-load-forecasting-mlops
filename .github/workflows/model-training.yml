@@ -83,20 +83,15 @@ jobs:
         env:
           PUSH_TO_REGISTRY: ${{ github.event.inputs.push_to_registry || 'false' }}
           DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
-          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           set -euo pipefail
 
           if [[ "$PUSH_TO_REGISTRY" == "true" ]]; then
-            if [[ -z "${DAGSHUB_REPO:-}" || -z "${DAGSHUB_USERNAME:-}" || -z "${DAGSHUB_TOKEN:-}" ]]; then
-              echo "push_to_registry=true requires DAGSHUB_REPO, DAGSHUB_USERNAME, DAGSHUB_TOKEN secrets." >&2
+            if [[ -z "${DAGSHUB_REPO:-}" ]]; then
+              echo "push_to_registry=true requires DAGSHUB_REPO secret." >&2
               exit 1
             fi
             echo "MLFLOW_TRACKING_MODE=dagshub" >> "$GITHUB_ENV"
-            echo "DAGSHUB_REPO=${DAGSHUB_REPO}" >> "$GITHUB_ENV"
-            echo "MLFLOW_TRACKING_USERNAME=${DAGSHUB_USERNAME}" >> "$GITHUB_ENV"
-            echo "MLFLOW_TRACKING_PASSWORD=${DAGSHUB_TOKEN}" >> "$GITHUB_ENV"
             echo "MLFLOW_TRACKING_URI=https://dagshub.com/${DAGSHUB_REPO}.mlflow" >> "$GITHUB_ENV"
           else
             echo "MLFLOW_TRACKING_MODE=local" >> "$GITHUB_ENV"
@@ -218,31 +213,42 @@ jobs:
         env:
           REGISTERED_MODEL_NAME: ${{ github.event.inputs.registered_model_name || 'german_load_forecasting_gbr' }}
           MLFLOW_EXPERIMENT_NAME: german-load-forecasting
+          DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+          DAGSHUB_REPO: ${{ secrets.DAGSHUB_REPO }}
+          MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           set -euo pipefail
+
+          if [[ -z "${DAGSHUB_USERNAME:-}" || -z "${DAGSHUB_TOKEN:-}" || -z "${DAGSHUB_REPO:-}" ]]; then
+            echo "push_to_registry=true requires DAGSHUB_REPO, DAGSHUB_USERNAME, DAGSHUB_TOKEN secrets." >&2
+            exit 1
+          fi
+
           uv run python - <<'PY'
-          import os
+            import os
 
-          import mlflow
-          from mlflow.tracking import MlflowClient
+            import mlflow
+            from mlflow.tracking import MlflowClient
 
-          tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
-          experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "german-load-forecasting")
-          registered_model_name = os.environ["REGISTERED_MODEL_NAME"]
+            tracking_uri = os.environ["MLFLOW_TRACKING_URI"]
+            experiment_name = os.environ.get("MLFLOW_EXPERIMENT_NAME", "german-load-forecasting")
+            registered_model_name = os.environ["REGISTERED_MODEL_NAME"]
 
-          mlflow.set_tracking_uri(tracking_uri)
-          client = MlflowClient(tracking_uri=tracking_uri)
+            mlflow.set_tracking_uri(tracking_uri)
+            client = MlflowClient(tracking_uri=tracking_uri)
 
-          experiment = client.get_experiment_by_name(experiment_name)
-          if experiment is None:
-            raise RuntimeError(f"Experiment '{experiment_name}' was not found.")
+            experiment = client.get_experiment_by_name(experiment_name)
+            if experiment is None:
+              raise RuntimeError(f"Experiment '{experiment_name}' was not found.")
 
-          runs = client.search_runs([experiment.experiment_id], order_by=["attributes.start_time DESC"], max_results=1)
-          if not runs:
-            raise RuntimeError("No runs found to register.")
+            runs = client.search_runs([experiment.experiment_id], order_by=["attributes.start_time DESC"], max_results=1)
+            if not runs:
+              raise RuntimeError("No runs found to register.")
 
-          run_id = runs[0].info.run_id
-          model_uri = f"runs:/{run_id}/training/sklearn_model"
-          result = mlflow.register_model(model_uri=model_uri, name=registered_model_name)
-          print(f"Registered model version: name={result.name} version={result.version} source_run={run_id}")
-          PY
+            run_id = runs[0].info.run_id
+            model_uri = f"runs:/{run_id}/training/sklearn_model"
+            result = mlflow.register_model(model_uri=model_uri, name=registered_model_name)
+            print(f"Registered model version: name={result.name} version={result.version} source_run={run_id}")
+            PY
