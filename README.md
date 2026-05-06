@@ -42,15 +42,23 @@ Current raw-to-clean mapping is defined in configs/inputs/sql.yml under sources.
 
 ## Architecture Overview
 
-```text
-Data sources -> Ingestion -> Preprocessing -> Feature/Marts -> API/Auth services
-                  |                                          |
-                  v                                          v
-               Airflow orchestration                  Nginx gateway/routing
-                                                               |
-                                                               v
-                                     Prometheus + Alertmanager + Grafana
-```
+<details>
+  <summary>Conceptual Architecture</summary>
+  <br>
+  <img src="reports/conceptual_architecture.png" width="600">
+</details>
+
+<details>
+  <summary>Request Flow</summary>
+  <br>
+  <img src="reports/request_flow.png" width="600">
+</details>
+
+<details>
+  <summary>Deployment Architecture</summary>
+  <br>
+  <img src="reports/deployment_architecture.png" width="600">
+</details>
 
 ## Tech Stack
 
