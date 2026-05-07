@@ -1,6 +1,9 @@
 # docker-compose.yml
 x-airflow-common: &airflow-common
-  image: apache/airflow:3.2.1-python3.14
+  build:
+    context: .
+    dockerfile: docker/airflow/Dockerfile
+  image: load-forecast-airflow:${IMAGE_TAG:?IMAGE_TAG is required}
   user: "${AIRFLOW_UID:-50000}:0"
   group_add:
     - "${DOCKER_GID}"
@@ -9,8 +12,8 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__CORE__DEFAULT_TIMEZONE: Europe/Berlin
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api:8080/airflow/execution/
+    AIRFLOW__API__SECRET_KEY: "${AIRFLOW__API__SECRET_KEY}"
     AIRFLOW__API_AUTH__JWT_SECRET: "${AIRFLOW__API_AUTH__JWT_SECRET}"
-    _PIP_ADDITIONAL_REQUIREMENTS: "${AIRFLOW_PIP_ADDITIONAL_REQUIREMENTS:-duckdb>=1.5.0 mlflow>=3.10.1 pyarrow>=23.0.1 scikit-learn>=1.8.0 joblib>=1.5.3 adbc-driver-manager>=1.11.0 numpy>=2.4.3 pandas>=2.3.3}"
     AIRFLOW__CORE__PARALLELISM: ${AIRFLOW__CORE__PARALLELISM:-4}
     AIRFLOW__CORE__DAG_CONCURRENCY: ${AIRFLOW__CORE__DAG_CONCURRENCY:-4}
     AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: ${AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG:-4}
