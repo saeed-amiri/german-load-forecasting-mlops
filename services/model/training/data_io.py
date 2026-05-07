@@ -2,9 +2,15 @@
 
 import logging
 from pathlib import Path
+from typing import Any
 
-import adbc_driver_duckdb.dbapi as dbapi
 import pyarrow as pa
+
+try:
+    import adbc_driver_duckdb.dbapi as dbapi
+except ImportError:
+    dbapi = None
+    import duckdb
 
 from configs.config_sql import sql_script_path
 from core.sql_helpers import render_sql_template
@@ -14,7 +20,14 @@ from .context import TrainContext
 logger = logging.getLogger(__name__)
 
 
-def _check_exist(columns: list[str], cursor: dbapi.Cursor, data: Path) -> None:
+def _connect_db() -> Any:
+    """Return a DB-API connection, preferring ADBC and falling back to DuckDB."""
+    if dbapi is not None:
+        return dbapi.connect()
+    return duckdb.connect()
+
+
+def _check_exist(columns: list[str], cursor: Any, data: Path) -> None:
     """Validate that configured feature columns exist in the source parquet."""
     cursor.execute(f"DESCRIBE SELECT * FROM read_parquet('{data}')")
     actual_schema = cursor.fetch_arrow_table()
@@ -32,12 +45,15 @@ def load_no_nan_data(ctx: TrainContext) -> pa.Table:
     columns = [*ctx.train_columns, ctx.target_column]
     rendered_query = render_sql_template(sql_path=query_file, context={"path": ctx.dataset, "columns": columns})
 
-    with dbapi.connect() as conn:
+    with _connect_db() as conn:
         with conn.cursor() as cur:
             _check_exist(columns=ctx.train_columns, cursor=cur, data=ctx.dataset)
             cur.execute(rendered_query)
-            batch_reader: pa.RecordBatchReader = cur.fetch_record_batch()
-            arrow_table = batch_reader.read_all()
+            if hasattr(cur, "fetch_record_batch"):
+                batch_reader: pa.RecordBatchReader = cur.fetch_record_batch()
+                arrow_table = batch_reader.read_all()
+            else:
+                arrow_table = cur.fetch_arrow_table()
 
     logger.info("Data '%s' loaded using SQL script '%s'", ctx.dataset, query_file)
     return arrow_table
