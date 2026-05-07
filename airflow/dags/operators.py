@@ -4,7 +4,7 @@ Set Operators for the pipelines
 
 import os
 
-from airflow.operators.bash import BashOperator
+from airflow.providers.standard.operators.bash import BashOperator
 
 
 class BasePythonOperator(BashOperator):
