@@ -15,6 +15,10 @@ on:
     inputs:
       environment:
         description: "Environment to deploy"
+        type: choice
+        options:
+          - staging
+          - production
         required: true
         default: staging
 
@@ -28,10 +32,11 @@ env:
 
 jobs:
   deploy-staging:
-    if: github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
     runs-on: ubuntu-latest
+    environment: staging
     concurrency:
-      group: staging-deploy
+      group: staging-deploy-${{ github.ref_name }}
       cancel-in-progress: true
     steps:
       - name: Checkout code
@@ -48,21 +53,23 @@ jobs:
         run: echo "Deploying to staging..."
 
       - name: Notify Discord
-        if: ${{ always() && secrets.DISCORD_WEBHOOK_URL != '' }}
+        if: always()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "Skipping Discord notification because DISCORD_WEBHOOK_URL is not set."
+            exit 0
+          fi
+
           curl --fail-with-body -sS -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{ \"content\": \"Staging deploy: ${{ job.status }}\" }"
 
-      - name: Discord webhook not configured
-        if: ${{ always() && secrets.DISCORD_WEBHOOK_URL == '' }}
-        run: echo "Skipping Discord notification because DISCORD_WEBHOOK_URL is not set."
-
   deploy-production:
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    environment: production
     concurrency:
       group: production-deploy
       cancel-in-progress: false
@@ -81,14 +88,15 @@ jobs:
         run: echo "Deploying to production..."
 
       - name: Notify Discord
-        if: ${{ always() && secrets.DISCORD_WEBHOOK_URL != '' }}
+        if: always()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "Skipping Discord notification because DISCORD_WEBHOOK_URL is not set."
+            exit 0
+          fi
+
           curl --fail-with-body -sS -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{ \"content\": \"Production deploy: ${{ job.status }}\" }"
-
-      - name: Discord webhook not configured
-        if: ${{ always() && secrets.DISCORD_WEBHOOK_URL == '' }}
-        run: echo "Skipping Discord notification because DISCORD_WEBHOOK_URL is not set."
