@@ -62,9 +62,17 @@ jobs:
             exit 0
           fi
 
-          curl --fail-with-body -sS -X POST "$DISCORD_WEBHOOK_URL" \
+          http_code=$(curl -sS -o /tmp/discord_response.txt -w "%{http_code}" -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{ \"content\": \"Staging deploy: ${{ job.status }}\" }"
+            -d "{ \"content\": \"Staging deploy: ${{ job.status }}\" }")
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Discord webhook accepted (HTTP $http_code)."
+          else
+            echo "Discord webhook failed (HTTP $http_code). Response body:" >&2
+            cat /tmp/discord_response.txt >&2
+            exit 1
+          fi
 
   deploy-production:
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production' && github.ref == 'refs/heads/main')
@@ -97,6 +105,14 @@ jobs:
             exit 0
           fi
 
-          curl --fail-with-body -sS -X POST "$DISCORD_WEBHOOK_URL" \
+          http_code=$(curl -sS -o /tmp/discord_response.txt -w "%{http_code}" -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
-            -d "{ \"content\": \"Production deploy: ${{ job.status }}\" }"
+            -d "{ \"content\": \"Production deploy: ${{ job.status }}\" }")
+
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "Discord webhook accepted (HTTP $http_code)."
+          else
+            echo "Discord webhook failed (HTTP $http_code). Response body:" >&2
+            cat /tmp/discord_response.txt >&2
+            exit 1
+          fi
