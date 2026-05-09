@@ -5,7 +5,7 @@
 - Jira: KAN-28 (https://saeed-amiri.atlassian.net/browse/KAN-28)
 - PR:
 
-**Update this ADR only in the this branch: KAN-28-gateway-ui-portal-integration**
+**Update this ADR only in this branch: KAN-28-gateway-ui-portal-integration**
 
 ## Context
 
