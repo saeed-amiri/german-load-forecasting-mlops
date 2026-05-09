@@ -45,8 +45,8 @@ Will start with a **simple linear regression** model for initial implementation 
 
 ## Follow-up Actions
 - [ ] Add new sources of data to the training pipeline as needed.
-- [-] Extend the training workflow to support additional models and algorithms.
-- [-] Continuously monitor and optimize the training workflow for performance and reliability.
+- [] Extend the training workflow to support additional models and algorithms.
+- [] Continuously monitor and optimize the training workflow for performance and reliability.
 
 
 # One moment on system design:
