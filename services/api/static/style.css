@@ -1,12 +1,54 @@
 /* General Page Styling */
 body { 
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-    margin: 40px; 
-    background-color: #f8f9fa; 
+    margin: 5px;
+    font-family: system-ui, sans-serif;
+    background-color: #e3dcd1; 
     color: #333;
 }
 
-h1, h2 { color: #2c3e50; }
+header {
+    width: 95.5%;
+    height: 7vh;
+    background: #F4F2EC;
+    /* color: white; */
+    padding: 30px 40px;
+    border-radius: 25px;
+    border-bottom-left-radius: 0px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+header p {
+    margin: 8px 0 0;
+    opacity: 0.8;
+}
+
+.sidebar {
+    width: 33vh;
+    height: 96vh;
+    
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 0px 0px;
+    border-radius: 25px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    transition-duration: 0.4s;
+    cursor: pointer;
+    vertical-align: top;
+}
+
+.sidebar1 {
+    background-color: #F4F2EC;
+    color: white; 
+    border: 0px solid #e4daca;
+}
 
 .back-link {
     display: inline-block;
@@ -70,7 +112,7 @@ h1, h2 { color: #2c3e50; }
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    margin: 4px 2px;
+    margin: 5px 12px;
     transition-duration: 0.4s;
     cursor: pointer;
 }
