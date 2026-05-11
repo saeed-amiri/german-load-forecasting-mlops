@@ -7,40 +7,14 @@
   <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-	<header>
-		<h1>Electricity: German Load Forecating</h1>
-		<p>Welcome to the MLOps Platform.</p>
-		<a
-			href="data"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="header-tabs"
-			data-tab-top="30px"
-			data-tab-left="550px"
-		>
-			Dashboard
-		</a>
-		<a
-			href="https://github.com/saeed-amiri/german-load-forecasting-mlops"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="header-tabs"
-			data-tab-top="30px"
-			data-tab-left="650px"
-		>
-			Project Repository
-		</a>
-		<a
-			href="https://saeed-amiri.github.io/saeed-portfolio/pages/about.html"
-			target="_blank"
-			rel="noopener noreferrer"
-			class="header-tabs"
-			data-tab-top="30px"
-			data-tab-left="800px"
-		>
-			About Me
-		</a>
-	</header>
+	{% set header_title = "Electricity: German Load Forecating" %}
+	{% set header_subtitle = "Welcome to the MLOps Platform." %}
+	{% set header_tabs = [
+		{"label": "Dashboard", "href": "data", "new_tab": true, "top": "30px", "left": "550px"},
+		{"label": "Project Repository", "href": "https://github.com/saeed-amiri/german-load-forecasting-mlops", "new_tab": true, "top": "30px", "left": "650px"},
+		{"label": "About Me", "href": "https://saeed-amiri.github.io/saeed-portfolio/pages/about.html", "new_tab": true, "top": "30px", "left": "800px"}
+	] %}
+	{% include "partials/header.html" %}
 
 	<div class="page-layout">
 		<nav class="sidebar sidebar1" aria-label="Main navigation">
@@ -67,15 +41,7 @@
 		</main>
 	</div>
 
-	<script>
-		document.querySelectorAll('.header-tabs').forEach((tab) => {
-			const { tabLeft, tabRight, tabTop, tabBottom } = tab.dataset;
-			if (tabLeft) tab.style.setProperty('--tab-left', tabLeft);
-			if (tabRight) tab.style.setProperty('--tab-right', tabRight);
-			if (tabTop) tab.style.setProperty('--tab-top', tabTop);
-			if (tabBottom) tab.style.setProperty('--tab-bottom', tabBottom);
-		});
-	</script>
+	{% include "partials/header_tabs_script.html" %}
 </body>
 </html>
 
