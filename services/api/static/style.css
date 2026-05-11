@@ -13,11 +13,16 @@ body {
 header {
     width: 95.5%;
     height: 7vh;
-    background: #F4F2EC;
+    background: linear-gradient(to bottom, #F4F2EC, #e3dcd1);
     color: rgb(45, 39, 39);
     padding: 30px 40px;
     border-radius: 25px;
     border-bottom-left-radius: 0px;
+    transition: background 5s ease;
+}
+
+header:hover {
+  background: linear-gradient(to bottom, #e3dcd1, #F4F2EC)
 }
 
 header h1 {
@@ -46,13 +51,18 @@ header p {
     border-top-right-radius: 0px;
     border-top-left-radius: 0px;
     border-bottom-right-radius: 0px;
+		transition: background 0.25 ease;
     transition-duration: 0.4s;
 }
 
 .sidebar1 {
-    background-color: #F4F2EC;
-    color: white; 
-    border: 0px solid #e4daca;
+  background: radial-gradient(farthest-corner at 100px 400px, #F4F2EC, #e3dcd1 80%);
+  color: white; 
+  border: 0px solid #e4daca;
+}
+
+.sidebar1:hover {
+  background: radial-gradient(closest-side, #F4F2EC, #e3dcd1);
 }
 
 .nav-btn {
@@ -60,14 +70,14 @@ header p {
     text-decoration: none;
     padding: 10px 12px;
     border-radius: 8px;
-    background: #F4F2EC;
+    background: linear-gradient(to top right, #F4F2EC, #e3dcd1);
     display: block;
     text-align: left;
     transition: 0.3s;
 }
 
 .nav-btn:hover {
-    background: transparent;
+    background: linear-gradient(to top right, #e3dcd1, #F4F2EC);
     color: rgb(9, 9, 9);
 }
 
