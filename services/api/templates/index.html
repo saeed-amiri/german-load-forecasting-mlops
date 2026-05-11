@@ -10,6 +10,26 @@
 	<header>
 		<h1>Electricity: German Load Forecating</h1>
 		<p>Welcome to the MLOps Platform.</p>
+		<a
+			href="https://github.com/saeed-amiri/german-load-forecasting-mlops"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="header-tabs"
+			data-tab-top="30px"
+			data-tab-left="550px"
+		>
+			Project Repository
+		</a>
+		<a
+			href="https://saeed-amiri.github.io/saeed-portfolio/"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="header-tabs"
+			data-tab-top="30px"
+			data-tab-left="750px"
+		>
+			About Me
+		</a>
 	</header>
 
 	<div class="page-layout">
@@ -36,6 +56,16 @@
 			</section>
 		</main>
 	</div>
+
+	<script>
+		document.querySelectorAll('.header-tabs').forEach((tab) => {
+			const { tabLeft, tabRight, tabTop, tabBottom } = tab.dataset;
+			if (tabLeft) tab.style.setProperty('--tab-left', tabLeft);
+			if (tabRight) tab.style.setProperty('--tab-right', tabRight);
+			if (tabTop) tab.style.setProperty('--tab-top', tabTop);
+			if (tabBottom) tab.style.setProperty('--tab-bottom', tabBottom);
+		});
+	</script>
 </body>
 </html>
 

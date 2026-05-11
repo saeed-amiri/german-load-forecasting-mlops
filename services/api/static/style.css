@@ -1,58 +1,89 @@
 /* General Page Styling */
 html {
-    scroll-behavior: smooth;
+  scroll-behavior: smooth;
 }
 
 body { 
-    margin: 5px;
-    font-family: system-ui, sans-serif;
-    background-color: #e3dcd1; 
-    color: #333;
+  margin: 5px;
+  font-family: system-ui, sans-serif;
+  background-color: #e3dcd1; 
+  color: #333;
 }
 
 header {
-    width: 95.5%;
-    height: 7vh;
-    background: linear-gradient(to bottom, #F4F2EC, #e3dcd1);
-    color: rgb(45, 39, 39);
-    padding: 30px 40px;
-    border-radius: 25px;
-    border-bottom-left-radius: 0px;
-    transition: background 5s ease;
+	position: relative;
+	width: 95.5%;
+	height: 7vh;
+	background: linear-gradient(to bottom, #F4F2EC, #e3dcd1);
+	color: rgb(45, 39, 39);
+	padding: 30px 40px;
+	border-radius: 25px;
+	border-bottom-left-radius: 0px;
+	transition: background 5s ease;
 }
 
 header:hover {
-  background: linear-gradient(to bottom, #e3dcd1, #F4F2EC)
+	background: linear-gradient(to bottom, #e3dcd1, #F4F2EC);
+}
+
+.header-tabs {
+	position: absolute;
+    left: var(--tab-left, auto);
+    right: var(--tab-right, auto);
+    top: var(--tab-top, auto);
+    bottom: var(--tab-bottom, auto);
+	padding: 8px 14px;
+	border-radius: 12px;
+	text-decoration: none;
+	color: #484444;
+	background: transparent;
+	opacity: 0;
+	transform: translateY(-6px);
+	pointer-events: none;
+	transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+header:hover .header-tabs,
+header:focus-within .header-tabs {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.header-tabs:hover,
+.header-tabs:focus {
+	background: linear-gradient(to bottom, #e3dcd1, #F4F2EC);
+	color: #111;
 }
 
 header h1 {
-    margin: 0;
-    font-size: 28px;
-    font-weight: 600;
+	margin: 0;
+	font-size: 28px;
+	font-weight: 600;
 }
 
 header p {
-    margin: 8px 0 0;
-    opacity: 0.8;
+	margin: 8px 0 0;
+	opacity: 0.8;
 }
 
 .sidebar {
-    width: 220px;
-    min-height: 80vh;
-    text-decoration: none;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    font-size: 16px;
-    margin: 0px 0px;
-    padding: 18px 14px;
-    border-radius: 25px;
-    border-top-right-radius: 0px;
-    border-top-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-		transition: background 0.25 ease;
-    transition-duration: 0.4s;
+	width: 220px;
+	min-height: 80vh;
+	text-decoration: none;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	font-size: 16px;
+	margin: 0px 0px;
+	padding: 18px 14px;
+	border-radius: 25px;
+	border-top-right-radius: 0px;
+	border-top-left-radius: 0px;
+	border-bottom-right-radius: 0px;
+	transition: background 0.25 ease;
+	transition-duration: 0.4s;
 }
 
 .sidebar1 {
