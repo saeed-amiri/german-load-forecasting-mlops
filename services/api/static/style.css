@@ -1,4 +1,8 @@
 /* General Page Styling */
+html {
+    scroll-behavior: smooth;
+}
+
 body { 
     margin: 5px;
     font-family: system-ui, sans-serif;
@@ -10,7 +14,7 @@ header {
     width: 95.5%;
     height: 7vh;
     background: #F4F2EC;
-    /* color: white; */
+    color: rgb(45, 39, 39);
     padding: 30px 40px;
     border-radius: 25px;
     border-bottom-left-radius: 0px;
@@ -28,26 +32,77 @@ header p {
 }
 
 .sidebar {
-    width: 33vh;
-    height: 96vh;
-    
-    text-align: center;
+    width: 220px;
+    min-height: 80vh;
     text-decoration: none;
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
     font-size: 16px;
     margin: 0px 0px;
+    padding: 18px 14px;
     border-radius: 25px;
     border-top-right-radius: 0px;
+    border-top-left-radius: 0px;
     border-bottom-right-radius: 0px;
     transition-duration: 0.4s;
-    cursor: pointer;
-    vertical-align: top;
 }
 
 .sidebar1 {
     background-color: #F4F2EC;
     color: white; 
     border: 0px solid #e4daca;
+}
+
+.nav-btn {
+    color: rgb(72, 70, 70);
+    text-decoration: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #F4F2EC;
+    display: block;
+    text-align: left;
+    transition: 0.3s;
+}
+
+.nav-btn:hover {
+    background: transparent;
+    color: rgb(9, 9, 9);
+}
+
+/* Content Area styling */
+.main-content {
+    flex: 1;
+    background: transparent;
+    border-radius: 25px;
+    border-top-left-radius: 0px;
+    padding: 20px 24px;
+}
+
+.page-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 22px;
+    margin-top: 12px;
+}
+
+section {
+    min-height: 110px;
+    padding: 6px 0 20px;
+    scroll-margin-top: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+section h2 {
+    margin: 0;
+    color: #292f35;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+section:last-child {
+    border-bottom: 0;
 }
 
 .back-link {
@@ -108,24 +163,24 @@ header p {
     border: none;
     color: white;
     padding: 16px 32px;
-    text-align: center;
+    text-align: left;
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    margin: 5px 12px;
+    margin: 0px 0px;
     transition-duration: 0.4s;
     cursor: pointer;
 }
 
 .button1 {
-    background-color: white; 
+    background-color: transparent; 
     color: black; 
-    border: 2px solid #04AA6D;
+    border: 0px solid #04AA6D;
 }
 
 .button1:hover {
-    background-color: #04AA6D;
-    color: white;
+    background-color: #e3dcd1;
+    color: rgb(242, 76, 76);
 }
 
 .button2 {
