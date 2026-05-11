@@ -74,6 +74,8 @@ header p {
     display: block;
     text-align: left;
     transition: 0.3s;
+    box-shadow: 0 4px 6px rgba(173, 44, 44, 0.1);
+
 }
 
 .nav-btn:hover {
@@ -180,16 +182,18 @@ section:last-child {
     margin: 0px 0px;
     transition-duration: 0.4s;
     cursor: pointer;
+		border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(173, 44, 44, 0.1);
 }
 
 .button1 {
-    background-color: transparent; 
+    background: linear-gradient(to bottom, #F4F2EC 10%, #e3dcd1 80%);
     color: black; 
     border: 0px solid #04AA6D;
 }
 
 .button1:hover {
-    background-color: #e3dcd1;
+    background: linear-gradient(to top, #F4F2EC 10%, #e3dcd1 70%);
     color: rgb(242, 76, 76);
 }
 
