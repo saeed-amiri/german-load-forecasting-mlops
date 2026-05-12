@@ -268,8 +268,21 @@ section:hover {
     padding: 12px 14px;
     border-top: 1px solid #d7ccbd;
     background: rgba(255, 255, 255, 0.55);
-    overflow-x: auto;
+    overflow: auto;
+    max-height: 320px;
     font-size: 12px;
+}
+
+.configs-layout .config-block {
+    width: 50%;
+    min-width: 320px;
+}
+
+@media (max-width: 900px) {
+    .configs-layout .config-block {
+        width: 100%;
+        min-width: 0;
+    }
 }
 
 .markdown-content p {
@@ -296,7 +309,6 @@ section:hover {
     border-radius: 10px;
     padding: 12px;
 }
-
 
 #footer {
     position: fixed;
