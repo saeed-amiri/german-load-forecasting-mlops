@@ -11,8 +11,8 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
 from configs.main import PipelineConfig, load_config
-from services.api.context import APIContext
 from services.api.config_inputs import load_config_inputs, page_header_from_inputs
+from services.api.context import APIContext
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,23 @@ def show_data_dashboard(request: Request):
                 **header_ctx,
             },
         )
+
+
+@router.get("/configs")
+def show_yaml_configs(request: Request):
+    config, api_ctx = _get_runtime_context(request)
+    config_inputs = load_config_inputs(str(config.project_root / "configs" / "inputs"))
+    header_ctx = page_header_from_inputs(config_inputs, page_key="configs")
+
+    templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
+    return templates.TemplateResponse(
+        request=request,
+        name="yml_config.html",
+        context={
+            "config_inputs": config_inputs,
+            **header_ctx,
+        },
+    )
 
 
 def _plot_targets(ctx: APIContext) -> go.Figure:
