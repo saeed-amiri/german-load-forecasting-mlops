@@ -8,12 +8,6 @@
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-    {% set header_title = "Load Analysis" %}
-    {% set header_subtitle = "Explore forecasts, features, and historical demand." %}
-    {% set header_tabs = [
-        {"label": "Back to Home", "href": "./", "new_tab": false, "top": "30px", "left": "550px"},
-        {"label": "Project Repository", "href": "https://github.com/saeed-amiri/german-load-forecasting-mlops", "new_tab": true, "top": "30px", "left": "680px"}
-    ] %}
     {% include "partials/header.html" %}
     
     <div class="plot-container">
@@ -29,6 +23,17 @@
     <div class="table-container">
         {{ table | safe }}
     </div>
+
+    <section>
+        <h2>Loaded YAML Configs</h2>
+        <p>The API loads these files from configs/inputs and renders them server-side.</p>
+        {% for file_name, cfg in config_inputs.items() %}
+        <details class="config-block">
+            <summary>{{ file_name }}.yml</summary>
+            <pre>{{ cfg | tojson(indent=2) }}</pre>
+        </details>
+        {% endfor %}
+    </section>
 
     {% include "partials/header_tabs_script.html" %}
 
