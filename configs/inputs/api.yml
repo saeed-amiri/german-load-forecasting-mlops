@@ -10,16 +10,21 @@ ui:
         new_tab: true
         top: "30px"
         left: "550px"
+      - label: "Review Configs"
+        href: "configs"
+        new_tab: true
+        top: "30px"
+        left: "650px"
       - label: "Project Repository"
         href: "https://github.com/saeed-amiri/german-load-forecasting-mlops"
         new_tab: true
         top: "30px"
-        left: "650px"
+        left: "780px"
       - label: "About Me"
         href: "https://saeed-amiri.github.io/saeed-portfolio/pages/about.html"
         new_tab: true
         top: "30px"
-        left: "800px"
+        left: "940px"
   data:
     title: "Load Analysis"
     subtitle: "Explore forecasts, features, and historical demand."
