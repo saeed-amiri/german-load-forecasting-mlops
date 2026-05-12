@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from configs.main import PipelineConfig, load_config
 
+from .config_inputs import load_config_inputs, page_header_from_inputs
 from .context import APIContext
 from .routers import data
 
@@ -59,7 +60,17 @@ templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
 
 @app.get("/")
 def read_root(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html", context={})
+    config_inputs = load_config_inputs(str(config.project_root / "configs" / "inputs"))
+    header_ctx = page_header_from_inputs(config_inputs, page_key="index")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            **header_ctx,
+            "config_inputs": config_inputs,
+        },
+    )
 
 
 @app.get("/health")
