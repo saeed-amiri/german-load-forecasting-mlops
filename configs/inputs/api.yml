@@ -1,2 +1,36 @@
 templates: "services/api/templates"
 static: "services/api/static"
+ui:
+  index:
+    title: "Electricity: German Load Forecating"
+    subtitle: "Welcome to the MLOps Platform."
+    tabs:
+      - label: "Dashboard"
+        href: "data"
+        new_tab: true
+        top: "30px"
+        left: "550px"
+      - label: "Project Repository"
+        href: "https://github.com/saeed-amiri/german-load-forecasting-mlops"
+        new_tab: true
+        top: "30px"
+        left: "650px"
+      - label: "About Me"
+        href: "https://saeed-amiri.github.io/saeed-portfolio/pages/about.html"
+        new_tab: true
+        top: "30px"
+        left: "800px"
+  data:
+    title: "Load Analysis"
+    subtitle: "Explore forecasts, features, and historical demand."
+    tabs:
+      - label: "Back to Home"
+        href: "./"
+        new_tab: false
+        top: "30px"
+        left: "550px"
+      - label: "Project Repository"
+        href: "https://github.com/saeed-amiri/german-load-forecasting-mlops"
+        new_tab: true
+        top: "30px"
+        left: "680px"
