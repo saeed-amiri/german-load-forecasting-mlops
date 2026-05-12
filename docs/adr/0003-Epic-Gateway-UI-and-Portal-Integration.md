@@ -55,9 +55,9 @@ Implement Gateway UI and Portal integration in the following order:
 
 ## Implementation Checklist (Execution Order)
 
-- [ ] Step 1 complete: previous epic TODOs reviewed/closed and baseline frozen.
-- [ ] Step 2 complete: Dashboard link is available and reachable.
-- [ ] Step 3 complete: tabs/graphs implemented with stable UI contracts.
+- [] Step 1 complete: previous epic TODOs reviewed/closed and baseline frozen.
+- [] Step 2 complete: Dashboard link is available and reachable.
+- [] Step 3 complete: tabs/graphs implemented with stable UI contracts.
 - [ ] Step 4 complete: Auth integration + RBAC enforced in UI and API.
 - [ ] Step 5 complete: Portal endpoints integrated and validated end-to-end.
 - [ ] Step 6 complete: config RO/RW permissions verified by role.
