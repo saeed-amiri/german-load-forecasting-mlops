@@ -34,3 +34,17 @@ ui:
         new_tab: true
         top: "30px"
         left: "680px"
+  configs:
+    title: "YAML Configuration"
+    subtitle: "Server-side rendered configs/inputs overview."
+    tabs:
+      - label: "Back to Home"
+        href: "./"
+        new_tab: false
+        top: "30px"
+        left: "550px"
+      - label: "Dashboard"
+        href: "data"
+        new_tab: false
+        top: "30px"
+        left: "680px"
