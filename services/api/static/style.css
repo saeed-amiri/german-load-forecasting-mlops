@@ -95,6 +95,12 @@ header p {
   background: radial-gradient(closest-side, #F4F2EC, #e3dcd1);
 }
 
+.sidebar-footer {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+}
+
 .nav-btn {
     color: rgb(72, 70, 70);
     text-decoration: none;
@@ -264,4 +270,36 @@ section:hover {
     background: rgba(255, 255, 255, 0.55);
     overflow-x: auto;
     font-size: 12px;
+}
+
+.markdown-content p {
+    margin: 10px 0;
+    line-height: 1.55;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+    margin: 16px 0 10px;
+    color: #292f35;
+}
+
+.markdown-content ul {
+    margin: 10px 0 10px 22px;
+}
+
+.markdown-content pre {
+    white-space: pre-wrap;
+    font-family: inherit;
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid #d7ccbd;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+
+#footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
 }
