@@ -132,6 +132,11 @@ def page_header_from_inputs(config_inputs: dict[str, Any], page_key: str) -> dic
             "header_subtitle": "Explore forecasts, features, and historical demand.",
             "header_tabs": [],
         },
+        "configs": {
+            "header_title": "YAML Configuration",
+            "header_subtitle": "Server-side rendered configs/inputs overview.",
+            "header_tabs": [],
+        },
     }
 
     base = defaults.get(page_key, {"header_title": "", "header_subtitle": "", "header_tabs": []})
