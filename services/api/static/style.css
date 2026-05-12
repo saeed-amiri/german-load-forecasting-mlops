@@ -18,7 +18,6 @@ header {
 	color: rgb(45, 39, 39);
 	padding: 30px 40px;
 	border-radius: 25px;
-	border-bottom-left-radius: 0px;
 	transition: background 5s ease;
 }
 
@@ -82,7 +81,7 @@ header p {
 	border-top-right-radius: 0px;
 	border-top-left-radius: 0px;
 	border-bottom-right-radius: 0px;
-	transition: background 0.25 ease;
+    transition: background 0.25s ease;
 	transition-duration: 0.4s;
 }
 
@@ -106,7 +105,6 @@ header p {
     text-align: left;
     transition: 0.3s;
     box-shadow: 0 4px 6px rgba(173, 44, 44, 0.1);
-
 }
 
 .nav-btn:hover {
@@ -146,6 +144,11 @@ section h2 {
 
 section:last-child {
     border-bottom: 0;
+}
+
+section:hover {
+	background: linear-gradient(to top, #F4F2EC, #e3dcd1);
+	border-radius: 25px;
 }
 
 .back-link {
@@ -237,4 +240,28 @@ section:last-child {
 .button2:hover {
     background-color: #008CBA;
     color: white;
+}
+
+.config-block {
+    margin: 12px 0;
+    border: 1px solid #d2c8b9;
+    border-radius: 12px;
+    background: linear-gradient(to bottom, #f4f2ec, #e9e0d3);
+    overflow: hidden;
+}
+
+.config-block summary {
+    padding: 10px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #3d3730;
+}
+
+.config-block pre {
+    margin: 0;
+    padding: 12px 14px;
+    border-top: 1px solid #d7ccbd;
+    background: rgba(255, 255, 255, 0.55);
+    overflow-x: auto;
+    font-size: 12px;
 }
