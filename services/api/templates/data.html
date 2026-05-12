@@ -25,14 +25,9 @@
     </div>
 
     <section>
-        <h2>Loaded YAML Configs</h2>
-        <p>The API loads these files from configs/inputs and renders them server-side.</p>
-        {% for file_name, cfg in config_inputs.items() %}
-        <details class="config-block">
-            <summary>{{ file_name }}.yml</summary>
-            <pre>{{ cfg | tojson(indent=2) }}</pre>
-        </details>
-        {% endfor %}
+        <h2>Configuration Files</h2>
+        <p>Open the dedicated page to inspect server-rendered YAML config inputs.</p>
+        <a href="configs" class="button button1">Open YAML Config Page</a>
     </section>
 
     {% include "partials/header_tabs_script.html" %}
