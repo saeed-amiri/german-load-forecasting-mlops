@@ -1,0 +1,30 @@
+<!-- services/api/templates/yml_config.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>YAML Configuration</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+	{% include "partials/header.html" %}
+
+	<main class="main-content">
+		<section class="configs-layout">
+			<h2>Loaded YAML Configs</h2>
+			<p>These values are loaded server-side from configs/inputs.</p>
+
+			{% for file_name, cfg in config_inputs.items() %}
+			<details class="config-block">
+				<summary>{{ file_name }}.yml</summary>
+				<pre>{{ cfg | tojson(indent=2) }}</pre>
+			</details>
+			{% endfor %}
+		</section>
+	</main>
+
+	{% include "partials/header_tabs_script.html" %}
+</body>
+
+</html>

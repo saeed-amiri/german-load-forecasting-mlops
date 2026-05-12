@@ -1,0 +1,20 @@
+<header>
+  <h1>{{ header_title | default("Electricity: German Load Forecating") }}</h1>
+  {% if header_subtitle %}
+    <p>{{ header_subtitle }}</p>
+  {% endif %}
+
+  {% for tab in header_tabs | default([]) %}
+    <a
+      href="{{ tab.href }}"
+      {% if tab.new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+      class="header-tabs"
+      {% if tab.top %}data-tab-top="{{ tab.top }}"{% endif %}
+      {% if tab.left %}data-tab-left="{{ tab.left }}"{% endif %}
+      {% if tab.right %}data-tab-right="{{ tab.right }}"{% endif %}
+      {% if tab.bottom %}data-tab-bottom="{{ tab.bottom }}"{% endif %}
+    >
+      {{ tab.label }}
+    </a>
+  {% endfor %}
+</header>

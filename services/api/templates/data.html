@@ -8,13 +8,7 @@
     <link rel="stylesheet" href="static/style.css">
 </head>
 <body>
-
-    <h1>Load Analysis</h1>
-    <a href="./">
-        <button class="button button2">
-            ← Back to Home
-        </button>
-    </a>
+    {% include "partials/header.html" %}
     
     <div class="plot-container">
         {{ plot_target | safe }}
@@ -29,6 +23,8 @@
     <div class="table-container">
         {{ table | safe }}
     </div>
+
+    {% include "partials/header_tabs_script.html" %}
 
 </body>
 </html>

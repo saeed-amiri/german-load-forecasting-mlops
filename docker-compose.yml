@@ -411,6 +411,7 @@ services:
       base:
         condition: service_completed_successfully
     volumes:
+      - .:/app:ro
       - ./data:/app/data
       - ./logs:/app/logs
     healthcheck:

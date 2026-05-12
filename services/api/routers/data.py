@@ -11,6 +11,7 @@ from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
 from configs.main import PipelineConfig, load_config
+from services.api.config_inputs import load_config_inputs, page_header_from_inputs
 from services.api.context import APIContext
 
 logger = logging.getLogger(__name__)
@@ -31,7 +32,9 @@ def _get_runtime_context(request: Request) -> tuple[PipelineConfig, APIContext]:
 
 @router.get("/data")
 def show_data_dashboard(request: Request):
-    _, api_ctx = _get_runtime_context(request)
+    config, api_ctx = _get_runtime_context(request)
+    config_inputs = load_config_inputs(str(config.project_root / "configs" / "inputs"))
+    header_ctx = page_header_from_inputs(config_inputs, page_key="data")
 
     templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
 
@@ -49,7 +52,13 @@ def show_data_dashboard(request: Request):
         return templates.TemplateResponse(
             request=request,
             name="data.html",
-            context={"plot_target": plot_target, "plot_feature": plot_feature, "table": table_html},
+            context={
+                "plot_target": plot_target,
+                "plot_feature": plot_feature,
+                "table": table_html,
+                "config_inputs": config_inputs,
+                **header_ctx,
+            },
         )
 
     except Exception as e:
@@ -61,8 +70,27 @@ def show_data_dashboard(request: Request):
                 "plot_target": f"<p class='text-danger'>Error loading plot: {e}</p>",
                 "plot_feature": f"<p class='text-danger'>Error loading plot: {e}</p>",
                 "table": f"<p class='text-danger'>Error loading data: {e}</p>",
+                "config_inputs": config_inputs,
+                **header_ctx,
             },
         )
+
+
+@router.get("/configs")
+def show_yaml_configs(request: Request):
+    config, api_ctx = _get_runtime_context(request)
+    config_inputs = load_config_inputs(str(config.project_root / "configs" / "inputs"))
+    header_ctx = page_header_from_inputs(config_inputs, page_key="configs")
+
+    templates = Jinja2Templates(directory=str(api_ctx.templates_dir))
+    return templates.TemplateResponse(
+        request=request,
+        name="yml_config.html",
+        context={
+            "config_inputs": config_inputs,
+            **header_ctx,
+        },
+    )
 
 
 def _plot_targets(ctx: APIContext) -> go.Figure:
