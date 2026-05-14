@@ -7,12 +7,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>German Load Forecasting Platform</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.95em;
+        }
+        .header-user span {
+            color: rgba(255,255,255,0.85);
+        }
+        .btn-logout {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 5px;
+            padding: 6px 14px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-logout:hover {
+            background: rgba(255,255,255,0.15);
+        }
+    </style>
 </head>
 <body>
 
 <header>
-    <h1>German Load Forecasting Platform</h1>
-    <p>Unified gateway for APIs, orchestration, monitoring, and model services.</p>
+    <div>
+        <h1>German Load Forecasting Platform</h1>
+        <p>Unified gateway for APIs, orchestration, monitoring, and model services.</p>
+    </div>
+    <div class="header-user">
+        <span id="header-username"></span>
+        <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
 </header>
 
 <div class="container">
@@ -80,6 +117,18 @@
     </div>
 
 </div>
+
+<script src="/static/auth.js"></script>
+<script>
+    // Gate: redirect to login page if no token is found.
+    requireLogin();
+
+    // Show the logged-in username in the header.
+    const username = getUsername();
+    if (username) {
+        document.getElementById("header-username").textContent = "👤 " + username;
+    }
+</script>
 
 </body>
 </html>
