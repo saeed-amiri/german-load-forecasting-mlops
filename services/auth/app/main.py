@@ -60,6 +60,7 @@ auth_ctx: AuthContext = get_auth_context(start_file=Path(__file__))
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Initialize the database on startup before the app begins serving requests."""
     init_db(auth_ctx)
     yield
 
