@@ -1,4 +1,9 @@
 # services/auth/app/routers/register.py
+"""Handles user registration via POST /auth/register.
+
+Hashes the submitted password, persists the new user in DuckDB, and returns
+a JWT access token so the client is immediately authenticated after sign-up.
+"""
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -11,6 +16,14 @@ router = APIRouter()
 
 
 class RegisterRequest(BaseModel):
+    """Request body for the /auth/register endpoint.
+
+    Attributes:
+        username: Desired unique login name.
+        password: Plain-text password — hashed server-side before storage.
+        role: Access role to assign. Defaults to ``"user"``.
+    """
+
     username: str
     password: str
     role: str = "user"
@@ -18,6 +31,18 @@ class RegisterRequest(BaseModel):
 
 @router.post("/register")
 def register(data: RegisterRequest):
+    """Register a new user and return a bearer token.
+
+    Args:
+        data: Parsed ``RegisterRequest`` body containing username, password, and role.
+
+    Returns:
+        JSON with ``access_token``, ``token_type``, ``username``, ``role``,
+        and a success message.
+
+    Raises:
+        HTTPException: 400 if a user with the same username already exists.
+    """
     hashed = hash_password(data.password)
     user = create_user(data.username, hashed, data.role)
 

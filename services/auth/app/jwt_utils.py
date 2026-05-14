@@ -13,6 +13,18 @@ def create_access_token(
     expires_delta: timedelta | None = None,
     ctx: AuthContext | None = None,
 ) -> str:
+    """Create a signed JWT access token.
+
+    Args:
+        data: Claims to embed in the token (e.g. ``{"sub": username, "role": role}``).
+        expires_delta: Optional custom lifetime. Falls back to
+            ``ctx.access_token_expire_minutes`` from the active context.
+        ctx: Optional ``AuthContext`` override. Uses the singleton from
+            ``get_auth_context()`` when not provided.
+
+    Returns:
+        A signed JWT string ready to include in an ``Authorization: Bearer`` header.
+    """
     active_ctx = ctx or get_auth_context()
     to_encode = data.copy()
 

@@ -11,12 +11,34 @@ router = APIRouter()
 
 
 class LoginRequest(BaseModel):
+    """Request body for the /auth/login endpoint.
+
+    Attributes:
+        username: The user's registered login name.
+        password: The plain-text password to verify against the stored hash.
+    """
+
     username: str
     password: str
 
 
 @router.post("/login")
 def login(data: LoginRequest):
+    """Authenticate a user and return a bearer token.
+
+    Looks up the user by username, verifies the password, and issues a signed JWT.
+    Both "user not found" and "wrong password" return the same 401 to avoid
+    leaking whether a username exists.
+
+    Args:
+        data: Parsed ``LoginRequest`` body with username and password.
+
+    Returns:
+        JSON with ``access_token``, ``token_type``, ``username``, and ``role``.
+
+    Raises:
+        HTTPException: 401 if the credentials are invalid.
+    """
     user = get_user(data.username)
 
     if user is None:
