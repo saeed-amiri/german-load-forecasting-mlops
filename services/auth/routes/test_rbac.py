@@ -8,7 +8,7 @@ testing to confirm that the ``require_role`` dependency correctly enforces
 
 from fastapi import APIRouter, Depends
 
-from ..app.rbac import require_role
+from ..app.rbac import require_role, require_service_access
 
 router = APIRouter()
 
@@ -43,3 +43,13 @@ def user_only_route(user=Depends(require_role("user"))):
         HTTPException: 403 if the caller's role is not ``"user"``.
     """
     return {"message": "Welcome user", "user": user}
+
+
+@router.get("/airflow-access")
+def airflow_access_route(user=Depends(require_service_access("/airflow/"))):
+    return {"message": "Airflow access granted", "user": user}
+
+
+@router.get("/mlflow-access")
+def mlflow_access_route(user=Depends(require_service_access("/mlflow/"))):
+    return {"message": "MLflow access granted", "user": user}

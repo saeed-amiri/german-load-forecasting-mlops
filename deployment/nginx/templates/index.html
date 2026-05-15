@@ -116,6 +116,71 @@
         </div>
     </div>
 
+    <h2>Role Access Matrix</h2>
+    <p class="matrix-note">Roles available: <strong>admin</strong> · <strong>engineer</strong> · <strong>ops</strong> · <strong>viewer</strong></p>
+
+    <div class="matrix-wrap">
+        <table class="matrix">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th>Path</th>
+                    <th>admin</th>
+                    <th>engineer</th>
+                    <th>ops</th>
+                    <th>viewer</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>API</td>
+                    <td><code>/api/</code></td>
+                    <td class="yes">✅</td><td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td>
+                </tr>
+                <tr>
+                    <td>Auth</td>
+                    <td><code>/auth/</code></td>
+                    <td class="yes">✅</td><td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td>
+                </tr>
+                <tr>
+                    <td>Airflow</td>
+                    <td><code>/airflow/</code></td>
+                    <td class="yes">✅</td><td class="yes">✅</td><td class="no">—</td><td class="no">—</td>
+                </tr>
+                <tr>
+                    <td>MLflow</td>
+                    <td><code>/mlflow/</code></td>
+                    <td class="yes">✅</td><td class="yes">✅</td><td class="no">—</td><td class="no">—</td>
+                </tr>
+                <tr>
+                    <td>Grafana</td>
+                    <td><code>/grafana/</code></td>
+                    <td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td><td class="yes">✅</td>
+                </tr>
+                <tr>
+                    <td>Prometheus</td>
+                    <td><code>/prometheus/</code></td>
+                    <td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td><td class="no">—</td>
+                </tr>
+                <tr>
+                    <td>Alertmanager</td>
+                    <td><code>/alerts/</code></td>
+                    <td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td><td class="no">—</td>
+                </tr>
+                <tr>
+                    <td>cAdvisor</td>
+                    <td><code>/cadvisor/</code></td>
+                    <td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td><td class="no">—</td>
+                </tr>
+                <tr>
+                    <td>Node Exporter</td>
+                    <td><code>/node/</code></td>
+                    <td class="yes">✅</td><td class="no">—</td><td class="yes">✅</td><td class="no">—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
 </div>
 
 <script src="/static/auth.js"></script>
