@@ -11,7 +11,7 @@ class User(BaseModel):
         id: Auto-assigned integer primary key from DuckDB. None before insertion.
         username: Unique login name for the user.
         password_hashed: Argon2 hash of the user's password — never store plain text.
-        role: Access role (e.g. ``"admin"`` or ``"user"``) used for RBAC checks.
+        role: Access role — one of ``"admin"``, ``"engineer"``, ``"ops"``, or ``"viewer"`` — used for RBAC checks.
     """
 
     id: int | None = None

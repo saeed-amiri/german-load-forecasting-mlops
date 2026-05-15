@@ -30,8 +30,8 @@ def admin_only_route(user=Depends(require_role("admin"))):
 
 
 @router.get("/user-only")
-def user_only_route(user=Depends(require_role("user"))):
-    """Endpoint accessible only to users with the ``"user"`` role.
+def user_only_route(user=Depends(require_role("viewer"))):
+    """Endpoint accessible only to users with the ``"viewer"`` role.
 
     Args:
         user: Decoded JWT payload, injected and role-checked by ``require_role``.
@@ -40,7 +40,7 @@ def user_only_route(user=Depends(require_role("user"))):
         A welcome message and the user payload.
 
     Raises:
-        HTTPException: 403 if the caller's role is not ``"user"``.
+        HTTPException: 403 if the caller's role is not ``"viewer"``.
     """
     return {"message": "Welcome user", "user": user}
 

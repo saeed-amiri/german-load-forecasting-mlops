@@ -26,7 +26,7 @@ class RegisterRequest(BaseModel):
 
     username: str
     password: str
-    role: str = "user"
+    role: str = "viewer"
 
 
 @router.post("/register")
