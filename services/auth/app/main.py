@@ -49,6 +49,7 @@ from fastapi import FastAPI
 
 from services.auth.context import AuthContext, get_auth_context
 
+from ..routes.check import router as check_router
 from ..routes.login import router as login_router
 from ..routes.protected import router as protected_router
 from ..routes.register import router as register_router
@@ -72,3 +73,4 @@ app.include_router(login_router, prefix="/auth")
 app.include_router(register_router, prefix="/auth")
 app.include_router(protected_router, prefix="/auth")
 app.include_router(rbac_router, prefix="/auth")
+app.include_router(check_router, prefix="/auth")
