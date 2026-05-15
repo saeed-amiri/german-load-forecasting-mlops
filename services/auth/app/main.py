@@ -22,7 +22,7 @@ Built with these layers:
 
 4. **RBAC (Role-Based Access Control)**  
    - `GET /auth/admin-only` — only `admin` role allowed  
-   - `GET /auth/user-only` — only `user` role allowed  
+   - `GET /auth/user-only` — only `viewer` role allowed  
    - Enforced via a reusable `require_role()` dependency factory
 
 ### Architecture Decisions
@@ -38,7 +38,7 @@ Built with these layers:
 ### The idea behind it
 It's a **lightweight auth sidecar** for the ML pipeline — not a full identity provider.
 It gives other services (Airflow DAGs, model-serving APIs, etc.) a simple way to gate endpoints
-behind JWT-authenticated roles (`admin` vs `user`), using a local DuckDB file instead of a full
+behind JWT-authenticated roles (`admin`, `engineer`, `ops`, `viewer`), using a local DuckDB file instead of a full
 PostgreSQL/Redis stack. Keeps infrastructure minimal while still supporting RBAC.
 """
 
