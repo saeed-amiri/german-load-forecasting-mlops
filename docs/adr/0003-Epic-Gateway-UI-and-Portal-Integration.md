@@ -79,3 +79,14 @@ Implement Gateway UI and Portal integration in the following order:
 - [ ] Link each step to a dedicated Jira sub-task under KAN-28.
 - [ ] Add integration tests for role-based API access and UI route guards.
 - [ ] Add smoke tests for Dashboard route and Portal data rendering.
+
+---
+# Making a Pause
+> "KAN-28 (RBAC phase) paused at KAN-37"  
+> "New priority: KAN-40 (deep learning model integration)"  
+> "KAN-28 can resume from PR #<klan-37-pr>"  
+
+## Options for Merge Strategy:
+> Choose a Merge Strategy (Later, when resuming)  
+>>Option A: Merge KAN-37 → KAN-32 → KAN-28 once ready (linear)  
+>>Option B: Squash KAN-37 → KAN-32 if you want cleaner history, then continue from there  
